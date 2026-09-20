@@ -1,0 +1,236 @@
+{
+  "name": "copilot-models-manager",
+  "displayName": "Copilot Models Manager",
+  "description": "Manage Custom Endpoint providers and models used by GitHub Copilot without reimplementing the model runtime.",
+  "version": "0.1.1",
+  "publisher": "starfall-org",
+  "engines": {
+    "vscode": "^1.138.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Other"
+  ],
+  "keywords": [
+    "copilot",
+    "models",
+    "byok",
+    "openai",
+    "anthropic",
+    "custom endpoint"
+  ],
+  "extensionKind": [
+    "ui"
+  ],
+  "activationEvents": [
+    "onView:copilotModelsManager.models",
+    "onView:copilotModelsManager.providers",
+    "onCommand:copilotModelsManager.addProvider",
+    "onCommand:copilotModelsManager.editProvider",
+    "onCommand:copilotModelsManager.refreshProvider",
+    "onCommand:copilotModelsManager.refreshAll",
+    "onCommand:copilotModelsManager.deleteProvider",
+    "onCommand:copilotModelsManager.addManualModel",
+    "onCommand:copilotModelsManager.editModel",
+    "onCommand:copilotModelsManager.removeModel",
+    "onCommand:copilotModelsManager.sync",
+    "onCommand:copilotModelsManager.openConfig"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "secondarySidebar": [
+        {
+          "id": "copilotModelsManager",
+          "title": "Copilot Models",
+          "icon": "$(extensions)"
+        }
+      ]
+    },
+    "views": {
+      "copilotModelsManager": [
+        {
+          "id": "copilotModelsManager.providers",
+          "name": "Providers",
+          "icon": "$(server-environment)",
+          "contextualTitle": "Copilot Model Providers"
+        },
+        {
+          "id": "copilotModelsManager.models",
+          "name": "Models",
+          "type": "webview",
+          "contextualTitle": "Copilot Models"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "copilotModelsManager.providers",
+        "contents": "Add a provider to expose its models through GitHub Copilot's built-in Custom Endpoint runtime.\n[Add Provider](command:copilotModelsManager.addProvider)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "copilotModelsManager.addProvider",
+        "title": "Copilot Models: Add Provider",
+        "icon": "$(add)"
+      },
+      {
+        "command": "copilotModelsManager.editProvider",
+        "title": "Edit Provider",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "copilotModelsManager.refreshProvider",
+        "title": "Refresh Models",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "copilotModelsManager.refreshAll",
+        "title": "Copilot Models: Refresh All Providers",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "copilotModelsManager.deleteProvider",
+        "title": "Delete Provider",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "copilotModelsManager.addManualModel",
+        "title": "Add Model Manually",
+        "icon": "$(add)"
+      },
+      {
+        "command": "copilotModelsManager.editModel",
+        "title": "Edit Model",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "copilotModelsManager.removeModel",
+        "title": "Remove Model",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "copilotModelsManager.sync",
+        "title": "Copilot Models: Sync with GitHub Copilot",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "copilotModelsManager.openConfig",
+        "title": "Copilot Models: Open chatLanguageModels.json",
+        "icon": "$(json)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "copilotModelsManager.addProvider",
+          "when": "view == copilotModelsManager.providers",
+          "group": "navigation@1"
+        },
+        {
+          "command": "copilotModelsManager.refreshAll",
+          "when": "view == copilotModelsManager.providers",
+          "group": "navigation@2"
+        },
+        {
+          "command": "copilotModelsManager.sync",
+          "when": "view == copilotModelsManager.providers",
+          "group": "navigation@3"
+        },
+        {
+          "command": "copilotModelsManager.openConfig",
+          "when": "view == copilotModelsManager.providers",
+          "group": "navigation@4"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "copilotModelsManager.refreshProvider",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
+          "group": "inline@1"
+        },
+        {
+          "command": "copilotModelsManager.addManualModel",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
+          "group": "models@1"
+        },
+        {
+          "command": "copilotModelsManager.editProvider",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
+          "group": "manage@1"
+        },
+        {
+          "command": "copilotModelsManager.deleteProvider",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
+          "group": "manage@9"
+        },
+        {
+          "command": "copilotModelsManager.editModel",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.model",
+          "group": "inline@1"
+        },
+        {
+          "command": "copilotModelsManager.removeModel",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.model",
+          "group": "manage@9"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Copilot Models Manager",
+      "properties": {
+        "copilotModelsManager.chatLanguageModelsPath": {
+          "type": "string",
+          "default": "",
+          "scope": "application",
+          "description": "Optional absolute path to chatLanguageModels.json. Use this for a custom VS Code profile or non-standard --user-data-dir. Leave empty for automatic desktop path detection."
+        },
+        "copilotModelsManager.writeApiKeyToCopilotConfig": {
+          "type": "boolean",
+          "default": true,
+          "scope": "application",
+          "markdownDescription": "Write the provider API key into `chatLanguageModels.json` so it only needs to be entered once. Disable this to make Copilot prompt for its own secret on first use. The extension always keeps its discovery copy in VS Code SecretStorage."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "npm run check-types && npm run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "npm run check-types && npm run lint && node esbuild.js --production",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "24.x",
+    "@types/vscode": "^1.138.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.0.0",
+    "esbuild": "^0.28.1",
+    "eslint": "^10.5.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.61.1"
+  },
+  "overrides": {
+    "diff": "^8.0.4",
+    "serialize-javascript": "^7.0.6"
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.3.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/starfall-org/copilot-models-manager.git"
+  },
+  "license": "MIT"
+}
