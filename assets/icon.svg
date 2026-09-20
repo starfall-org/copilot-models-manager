@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Copilot Models Manager</title>
+  <desc id="desc">A model hub connecting an assistant core to three managed model nodes.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="34" y1="24" x2="224" y2="232" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#071429"/>
+      <stop offset="0.52" stop-color="#0D1642"/>
+      <stop offset="1" stop-color="#26104B"/>
+    </linearGradient>
+
+    <linearGradient id="copilot" x1="58" y1="54" x2="203" y2="206" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2FE6F7"/>
+      <stop offset="0.36" stop-color="#2F81F7"/>
+      <stop offset="0.7" stop-color="#8A5CF6"/>
+      <stop offset="1" stop-color="#E34CFF"/>
+    </linearGradient>
+
+    <linearGradient id="hubFill" x1="78" y1="73" x2="181" y2="151" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1A315E"/>
+      <stop offset="1" stop-color="#131735"/>
+    </linearGradient>
+
+    <linearGradient id="nodeA" x1="42" y1="174" x2="91" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2FE6F7"/>
+      <stop offset="1" stop-color="#2F81F7"/>
+    </linearGradient>
+
+    <linearGradient id="nodeB" x1="104" y1="174" x2="151" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3DBBFF"/>
+      <stop offset="1" stop-color="#8A5CF6"/>
+    </linearGradient>
+
+    <linearGradient id="nodeC" x1="166" y1="174" x2="215" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8A5CF6"/>
+      <stop offset="1" stop-color="#E34CFF"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000814" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <!-- App tile -->
+  <rect x="10" y="10" width="236" height="236" rx="52" fill="url(#bg)"/>
+  <rect x="11.5" y="11.5" width="233" height="233" rx="50.5" fill="none" stroke="url(#copilot)" stroke-width="3" opacity="0.9"/>
+
+  <!-- Orbit / provider ring -->
+  <path d="M50 91C62 54 98 39 128 39C158 39 194 54 206 91"
+        fill="none" stroke="url(#copilot)" stroke-width="8" stroke-linecap="round" opacity="0.95"/>
+  <circle cx="50" cy="91" r="8" fill="#2FE6F7"/>
+  <circle cx="206" cy="91" r="8" fill="#D957FF"/>
+  <circle cx="128" cy="39" r="8" fill="#7E8CFF"/>
+
+  <!-- Central assistant / manager hub -->
+  <g filter="url(#shadow)">
+    <rect x="68" y="72" width="120" height="82" rx="31" fill="url(#hubFill)" stroke="url(#copilot)" stroke-width="7"/>
+    <path d="M96 116C99 105 108 99 118 99" fill="none" stroke="#2FE6F7" stroke-width="8" stroke-linecap="round"/>
+    <path d="M138 99C148 99 157 105 160 116" fill="none" stroke="#B36BFF" stroke-width="8" stroke-linecap="round"/>
+    <path d="M110 133H146" fill="none" stroke="#B9D7FF" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+  </g>
+
+  <!-- Model connections -->
+  <path d="M95 154C93 167 84 173 69 181" fill="none" stroke="url(#nodeA)" stroke-width="7" stroke-linecap="round"/>
+  <path d="M128 154V181" fill="none" stroke="url(#nodeB)" stroke-width="7" stroke-linecap="round"/>
+  <path d="M161 154C163 167 172 173 187 181" fill="none" stroke="url(#nodeC)" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- Managed model cards -->
+  <g filter="url(#shadow)">
+    <rect x="37" y="181" width="64" height="40" rx="13" fill="#0F2248" stroke="url(#nodeA)" stroke-width="5"/>
+    <circle cx="57" cy="201" r="8" fill="#2FE6F7"/>
+    <path d="M73 194H90M73 202H87M73 210H83" stroke="#A9DFFF" stroke-width="4" stroke-linecap="round"/>
+
+    <rect x="96" y="181" width="64" height="40" rx="13" fill="#111F4C" stroke="url(#nodeB)" stroke-width="5"/>
+    <path d="M116 191L128 198V212L116 219L104 212V198Z" fill="url(#nodeB)"/>
+    <path d="M137 194H150M137 202H147M137 210H144" stroke="#C1C6FF" stroke-width="4" stroke-linecap="round"/>
+
+    <rect x="155" y="181" width="64" height="40" rx="13" fill="#201442" stroke="url(#nodeC)" stroke-width="5"/>
+    <path d="M175 191L187 211H163Z" fill="url(#nodeC)"/>
+    <path d="M196 194H209M196 202H206M196 210H203" stroke="#F1B5FF" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>

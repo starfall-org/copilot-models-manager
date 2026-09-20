@@ -2,7 +2,7 @@
   "name": "copilot-models-manager",
   "displayName": "Copilot Models Manager",
   "description": "Manage Custom Endpoint providers and models used by GitHub Copilot without reimplementing the model runtime.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "starfall-org",
   "engines": {
     "vscode": "^1.138.0"
@@ -43,7 +43,7 @@
         {
           "id": "copilotModelsManager",
           "title": "Copilot Models",
-          "icon": "$(extensions)"
+          "icon": "assets/icon.svg"
         }
       ]
     },
@@ -232,5 +232,6 @@
     "type": "git",
     "url": "https://github.com/starfall-org/copilot-models-manager.git"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "icon": "assets/icon.png"
 }

@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.1.2
+
+- Added an original SVG icon using a Copilot-adjacent cyan, blue, violet, and magenta palette.
+- Uses the SVG directly for the Secondary Side Bar container.
+- Includes a PNG rasterized from the SVG for the VS Code Marketplace extension icon.
+
 ## 0.1.1
 
 - Reworked model selection around persistent checkboxes in the sidebar.
