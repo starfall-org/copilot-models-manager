@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.1.26
+
+- Reordered the model right-click menu into three groups.
+- **Set/Unset Thinking** is now the first and highest-priority group.
+- **Edit Model** and **Delete Model** share the second management group.
+- **Copy Model ID** is isolated in the final group.
+
 ## 0.1.25
 
 - Moved **Set Thinking / Unset Thinking** from model inline actions to the model right-click context menu.

@@ -2,7 +2,7 @@
   "name": "copilot-models-manager",
   "displayName": "Copilot Models Manager",
   "description": "Manage Custom Endpoint providers and models used by GitHub Copilot without reimplementing the model runtime.",
-  "version": "0.1.25",
+  "version": "0.1.26",
   "publisher": "starfall-org",
   "engines": {
     "vscode": "^1.138.0"
@@ -201,27 +201,27 @@
         {
           "command": "copilotModelsManager.editModel",
           "when": "view == copilotModelsManager.providers && viewItem =~ /^copilotModelsManager\\.model\\./",
-          "group": "model@1"
+          "group": "2_manage@1"
         },
         {
           "command": "copilotModelsManager.removeModel",
           "when": "view == copilotModelsManager.providers && viewItem =~ /^copilotModelsManager\\.model\\./",
-          "group": "model@2"
+          "group": "2_manage@2"
         },
         {
           "command": "copilotModelsManager.setThinking",
           "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.model.noThinking",
-          "group": "model@1.5"
+          "group": "1_thinking@1"
         },
         {
           "command": "copilotModelsManager.unsetThinking",
           "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.model.thinking",
-          "group": "model@1.5"
+          "group": "1_thinking@1"
         },
         {
           "command": "copilotModelsManager.copyModelId",
           "when": "view == copilotModelsManager.providers && viewItem =~ /^copilotModelsManager\\.model\\./",
-          "group": "model@0"
+          "group": "3_copy@1"
         }
       ]
     },
