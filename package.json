@@ -2,7 +2,7 @@
   "name": "copilot-models-manager",
   "displayName": "Copilot Models Manager",
   "description": "Manage Custom Endpoint providers and models used by GitHub Copilot without reimplementing the model runtime.",
-  "version": "0.1.2",
+  "version": "0.1.25",
   "publisher": "starfall-org",
   "engines": {
     "vscode": "^1.138.0"
@@ -23,7 +23,6 @@
     "ui"
   ],
   "activationEvents": [
-    "onView:copilotModelsManager.models",
     "onView:copilotModelsManager.providers",
     "onCommand:copilotModelsManager.addProvider",
     "onCommand:copilotModelsManager.editProvider",
@@ -33,8 +32,13 @@
     "onCommand:copilotModelsManager.addManualModel",
     "onCommand:copilotModelsManager.editModel",
     "onCommand:copilotModelsManager.removeModel",
-    "onCommand:copilotModelsManager.sync",
-    "onCommand:copilotModelsManager.openConfig"
+    "onCommand:copilotModelsManager.openConfig",
+    "onCommand:copilotModelsManager.manageCopilotApiKey",
+    "onCommand:copilotModelsManager.setThinking",
+    "onCommand:copilotModelsManager.unsetThinking",
+    "onCommand:copilotModelsManager.openManageLanguageModels",
+    "onCommand:copilotModelsManager.copyApiKey",
+    "onCommand:copilotModelsManager.copyModelId"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -54,12 +58,6 @@
           "name": "Providers",
           "icon": "$(server-environment)",
           "contextualTitle": "Copilot Model Providers"
-        },
-        {
-          "id": "copilotModelsManager.models",
-          "name": "Models",
-          "type": "webview",
-          "contextualTitle": "Copilot Models"
         }
       ]
     },
@@ -76,14 +74,29 @@
         "icon": "$(add)"
       },
       {
+        "command": "copilotModelsManager.openManageLanguageModels",
+        "title": "Copilot Models: Manage Language Models",
+        "icon": "$(settings-gear)"
+      },
+      {
         "command": "copilotModelsManager.editProvider",
         "title": "Edit Provider",
         "icon": "$(edit)"
       },
       {
+        "command": "copilotModelsManager.manageCopilotApiKey",
+        "title": "Update Copilot API Key…",
+        "icon": "$(key)"
+      },
+      {
+        "command": "copilotModelsManager.copyApiKey",
+        "title": "Copy API Key",
+        "icon": "$(copy)"
+      },
+      {
         "command": "copilotModelsManager.refreshProvider",
-        "title": "Refresh Models",
-        "icon": "$(refresh)"
+        "title": "Fetch Models",
+        "icon": "$(cloud-download)"
       },
       {
         "command": "copilotModelsManager.refreshAll",
@@ -107,18 +120,28 @@
       },
       {
         "command": "copilotModelsManager.removeModel",
-        "title": "Remove Model",
+        "title": "Delete Model",
         "icon": "$(trash)"
-      },
-      {
-        "command": "copilotModelsManager.sync",
-        "title": "Copilot Models: Sync with GitHub Copilot",
-        "icon": "$(sync)"
       },
       {
         "command": "copilotModelsManager.openConfig",
         "title": "Copilot Models: Open chatLanguageModels.json",
         "icon": "$(json)"
+      },
+      {
+        "command": "copilotModelsManager.setThinking",
+        "title": "Set Thinking",
+        "icon": "$(lightbulb)"
+      },
+      {
+        "command": "copilotModelsManager.unsetThinking",
+        "title": "Unset Thinking",
+        "icon": "$(lightbulb-autofix)"
+      },
+      {
+        "command": "copilotModelsManager.copyModelId",
+        "title": "Copy Model ID",
+        "icon": "$(copy)"
       }
     ],
     "menus": {
@@ -129,14 +152,9 @@
           "group": "navigation@1"
         },
         {
-          "command": "copilotModelsManager.refreshAll",
+          "command": "copilotModelsManager.openManageLanguageModels",
           "when": "view == copilotModelsManager.providers",
           "group": "navigation@2"
-        },
-        {
-          "command": "copilotModelsManager.sync",
-          "when": "view == copilotModelsManager.providers",
-          "group": "navigation@3"
         },
         {
           "command": "copilotModelsManager.openConfig",
@@ -149,6 +167,21 @@
           "command": "copilotModelsManager.refreshProvider",
           "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
           "group": "inline@1"
+        },
+        {
+          "command": "copilotModelsManager.refreshProvider",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
+          "group": "provider@1"
+        },
+        {
+          "command": "copilotModelsManager.copyApiKey",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
+          "group": "manage@0"
+        },
+        {
+          "command": "copilotModelsManager.manageCopilotApiKey",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
+          "group": "models@0"
         },
         {
           "command": "copilotModelsManager.addManualModel",
@@ -167,13 +200,28 @@
         },
         {
           "command": "copilotModelsManager.editModel",
-          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.model",
-          "group": "inline@1"
+          "when": "view == copilotModelsManager.providers && viewItem =~ /^copilotModelsManager\\.model\\./",
+          "group": "model@1"
         },
         {
           "command": "copilotModelsManager.removeModel",
-          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.model",
-          "group": "manage@9"
+          "when": "view == copilotModelsManager.providers && viewItem =~ /^copilotModelsManager\\.model\\./",
+          "group": "model@2"
+        },
+        {
+          "command": "copilotModelsManager.setThinking",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.model.noThinking",
+          "group": "model@1.5"
+        },
+        {
+          "command": "copilotModelsManager.unsetThinking",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.model.thinking",
+          "group": "model@1.5"
+        },
+        {
+          "command": "copilotModelsManager.copyModelId",
+          "when": "view == copilotModelsManager.providers && viewItem =~ /^copilotModelsManager\\.model\\./",
+          "group": "model@0"
         }
       ]
     },
@@ -185,12 +233,6 @@
           "default": "",
           "scope": "application",
           "description": "Optional absolute path to chatLanguageModels.json. Use this for a custom VS Code profile or non-standard --user-data-dir. Leave empty for automatic desktop path detection."
-        },
-        "copilotModelsManager.writeApiKeyToCopilotConfig": {
-          "type": "boolean",
-          "default": true,
-          "scope": "application",
-          "markdownDescription": "Write the provider API key into `chatLanguageModels.json` so it only needs to be entered once. Disable this to make Copilot prompt for its own secret on first use. The extension always keeps its discovery copy in VS Code SecretStorage."
         }
       }
     }
@@ -224,9 +266,6 @@
   "overrides": {
     "diff": "^8.0.4",
     "serialize-javascript": "^7.0.6"
-  },
-  "dependencies": {
-    "jsonc-parser": "^3.3.1"
   },
   "repository": {
     "type": "git",

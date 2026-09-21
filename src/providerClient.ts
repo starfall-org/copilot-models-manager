@@ -63,6 +63,26 @@ function parseNumber(...values: unknown[]): number | undefined {
 	return undefined;
 }
 
+
+export function defaultContextWindow(): number {
+	return 128 * 1024;
+}
+
+export function defaultMaxOutputTokens(contextWindow?: number): number {
+	const kib = 1024;
+	const effectiveContextWindow = contextWindow ?? defaultContextWindow();
+	if (effectiveContextWindow < 128 * kib) {
+		return 16 * kib;
+	}
+	if (effectiveContextWindow < 256 * kib) {
+		return 32 * kib;
+	}
+	if (effectiveContextWindow < 512 * kib) {
+		return 64 * kib;
+	}
+	return 128 * kib;
+}
+
 function stringArray(value: unknown): string[] {
 	return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }
@@ -109,20 +129,23 @@ function parseDiscoveredModel(value: unknown): DiscoveredModel | undefined {
 		? ['reasoning', 'reasoning_effort', 'include_reasoning'].some(item => supported.has(item))
 		: undefined;
 
+	const contextWindow = parseNumber(raw.context_length, raw.contextWindow, raw.max_model_len, raw.max_context_length) ?? defaultContextWindow();
+	const discoveredMaxOutputTokens = parseNumber(
+		raw.max_output_tokens,
+		raw.maxOutputTokens,
+		raw.max_completion_tokens,
+		topProvider.max_completion_tokens,
+	);
+
 	return {
 		id,
 		name: displayName?.trim() || id,
 		toolCalling,
 		vision,
 		thinking,
-		contextWindow: parseNumber(raw.context_length, raw.contextWindow, raw.max_model_len, raw.max_context_length),
+		contextWindow,
 		maxInputTokens: parseNumber(raw.max_input_tokens, raw.maxInputTokens),
-		maxOutputTokens: parseNumber(
-			raw.max_output_tokens,
-			raw.maxOutputTokens,
-			raw.max_completion_tokens,
-			topProvider.max_completion_tokens,
-		),
+		maxOutputTokens: discoveredMaxOutputTokens ?? defaultMaxOutputTokens(contextWindow),
 		supportsReasoningEffort: supported.has('reasoning_effort') ? ['low', 'medium', 'high'] : undefined,
 	};
 }

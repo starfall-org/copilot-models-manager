@@ -7,7 +7,8 @@ The extension does **not** implement its own language-model runtime. It discover
 ## Features
 
 - Dedicated **Copilot Models** view container in the **Secondary Side Bar**, beside Chat/Copilot.
-- Add a provider once with:
+- Add Provider opens a draft editor where fields can be changed in any order and saved explicitly.
+- Add a provider with:
   - display name
   - API type
   - base URL
@@ -16,12 +17,14 @@ The extension does **not** implement its own language-model runtime. It discover
   - Chat Completions
   - Responses
   - Messages
-- Automatically discovers models from the provider model-list endpoint.
-- Dedicated **Models** view with persistent checkboxes for deciding which models are exposed to Copilot.
-- Live model search by display name or model ID.
-- **Select all visible** and **Unselect visible** only affect models matching the current search.
-- Refresh a provider later to pick up newly available models. Newly discovered models start unchecked, while existing selections are preserved.
-- Add model IDs manually when a provider does not expose a compatible model-list endpoint.
+- Each provider is a native expandable VS Code tree node; only selected models are shown beneath that provider.
+- Use **Fetch Models** on a provider to query its model-list endpoint and open a persistent native multi-select Quick Pick.
+- The Fetch Models popup has native search, model checkboxes, and **Select all visible / Unselect visible** toolbar actions.
+- All Quick Picks use `ignoreFocusOut`, so clicking elsewhere does not dismiss them.
+- Newly discovered models start unchecked, while existing selections are preserved.
+- Add model IDs manually when a provider does not expose a compatible model-list endpoint. Add Model opens the full model draft editor and writes nothing until **Save Model** is chosen.
+- Edit Provider and Edit Model use nested native pickers: Esc in a child editor returns to the parent edit menu; Esc in the parent menu closes it.
+- Models expose an inline one-click **Set Thinking / Unset Thinking** action. It writes `thinking: true` or removes the `thinking` property immediately without confirmation.
 - Edit per-model capabilities:
   - tool calling
   - vision
@@ -30,7 +33,8 @@ The extension does **not** implement its own language-model runtime. It discover
   - max input/output tokens
   - model options
 - Configure a model-list endpoint override and shared request headers per provider.
-- Stores the provider base URL only once in this extension. During sync, the extension generates the URL that Copilot requires on each model entry.
+- When context size is unknown, the extension defaults `contextWindow` to 128K. When `maxOutputTokens` is missing, it supplies 16K, 32K, 64K, or 128K based on context size (a 128K context defaults to 32K output).
+- Stores the provider base URL once in the provider metadata inside `chatLanguageModels.json`; model request URLs are generated automatically whenever the file is updated.
 - Runs as a UI extension so Remote SSH/workspace placement does not move provider management onto the remote host.
 
 ## How model URLs are generated
@@ -80,13 +84,21 @@ When providers return capability metadata, the extension imports common context-
 
 ## Copilot configuration
 
-The extension keeps its own provider definitions and writes managed groups as:
+`chatLanguageModels.json` is the source of truth. The extension does not persist a second provider/model database. On activation it loads supported `customendpoint` providers from that file, and every Add/Edit/Delete/Fetch Models action writes the updated configuration immediately.
+
+Provider-level manager metadata is stored inside the same group so a provider can keep one base URL and can exist even with zero selected models. A managed group looks like:
 
 ```json
 {
   "name": "My Gateway",
   "vendor": "customendpoint",
   "apiType": "responses",
+  "copilotModelsManager": {
+    "id": "provider-id",
+    "baseUrl": "https://gateway.example.com/v1",
+    "createdAt": 0,
+    "updatedAt": 0
+  },
   "models": [
     {
       "id": "example-model",
@@ -99,21 +111,20 @@ The extension keeps its own provider definitions and writes managed groups as:
 }
 ```
 
-Existing groups that are not managed by this extension are preserved. Unchecked models are omitted from the managed Copilot group but stay in the provider catalog so they can be checked again later. If a provider has no selected models, its managed group is removed from `chatLanguageModels.json`.
+Existing non-managed groups are preserved. Other vendors are treated as opaque configuration: the extension does not load, edit, remove, rename, or use them for provider-name collision checks. The JSON stores only the selected models; **Fetch Models** queries the provider again whenever you want to change the selection. A provider with zero selected models remains in the file with `models: []`, so its base URL and discovery settings are not lost.
 
 ## API keys
 
-The extension keeps its model-discovery copy of each key in VS Code `SecretStorage`.
+There are two separate secret stores involved:
 
-By default it also writes the key into `chatLanguageModels.json` so that the user enters the key only once and Copilot can use the model immediately.
+- **Discovery API Key**: stored in this extension's VS Code `SecretStorage` and used only when **Fetch Models** calls the provider's model-list endpoint.
+- **Copilot API Key**: owned by VS Code's Language Models subsystem. `chatLanguageModels.json` stores only an input reference such as `${input:chat.lm.secret.cef88b1}`.
 
-If you do not want the key written to the JSON file, disable:
+The extension treats the existing `apiKey` field in `chatLanguageModels.json` as opaque configuration. If the field already exists, its exact value is preserved on every rewrite; the extension does not normalize, replace, or delete it.
 
-```text
-Copilot Models Manager: Write Api Key To Copilot Config
-```
+For a newly added provider, use **Update Copilot API Key…** from the provider context menu. The extension opens VS Code's **Manage Language Models** page filtered to that provider; choose **Update API Key** there. VS Code stores that key in its own secure storage and updates `chatLanguageModels.json` with the secret reference. The extension's file watcher then reloads and preserves that reference on every later edit.
 
-In that mode the generated Copilot configuration uses an `${input:...}` secret placeholder and VS Code may ask for the key again when Copilot first uses that provider.
+VS Code's public extension API does not expose a supported way for one extension to seed the built-in Language Models secret store directly, so this one-time binding cannot safely be replaced with this extension's own `SecretStorage`.
 
 ## VS Code profiles and custom user-data directories
 
@@ -141,11 +152,14 @@ Use the **Copilot Models** view toolbar or Command Palette:
 
 - Copilot Models: Add Provider
 - Copilot Models: Refresh All Providers
-- Copilot Models: Sync with GitHub Copilot
 - Copilot Models: Open chatLanguageModels.json
 
 Provider and model-specific actions are available from each tree item's context menu.
 
 ## Runtime ownership
 
-Copilot Models Manager intentionally stops at configuration management. After sync, inference is performed by VS Code/GitHub Copilot's built-in Custom Endpoint provider rather than by this extension.
+Copilot Models Manager intentionally stops at configuration management. Once an edit is written to `chatLanguageModels.json`, inference is performed by VS Code/GitHub Copilot's built-in Custom Endpoint provider rather than by this extension.
+
+### Header editor
+
+Provider and model `requestHeaders` are edited through a dedicated Quick Pick UI instead of raw JSON. The list shows **Add Header** first, followed by each header key and value with inline Edit/Delete actions. Editing exposes separate `key` and `value` rows. Clearing a key deletes the header; clearing only the value keeps the header with an empty-string value.

@@ -1,40 +1,50 @@
 import * as vscode from 'vscode';
 import { ManagedProvider } from './types';
 
-const PROVIDERS_KEY = 'copilotModelsManager.providers.v1';
 const SECRET_PREFIX = 'copilotModelsManager.providerApiKey.';
 
-export class ProviderStore {
+export class ProviderStore implements vscode.Disposable {
+	private providers: ManagedProvider[] = [];
 	private readonly changeEmitter = new vscode.EventEmitter<void>();
 	readonly onDidChange = this.changeEmitter.event;
 
 	constructor(private readonly context: vscode.ExtensionContext) {}
 
 	getProviders(): ManagedProvider[] {
-		return this.context.globalState.get<ManagedProvider[]>(PROVIDERS_KEY, []);
+		return this.providers.map(provider => ({
+			...provider,
+			models: provider.models.map(model => ({ ...model })),
+		}));
 	}
 
 	getProvider(id: string): ManagedProvider | undefined {
-		return this.getProviders().find(provider => provider.id === id);
+		const provider = this.providers.find(item => item.id === id);
+		return provider
+			? { ...provider, models: provider.models.map(model => ({ ...model })) }
+			: undefined;
+	}
+
+	replaceAll(providers: ManagedProvider[]): void {
+		this.providers = providers.map(provider => ({
+			...provider,
+			models: provider.models.map(model => ({ ...model })),
+		}));
+		this.changeEmitter.fire();
 	}
 
 	async saveProvider(provider: ManagedProvider): Promise<void> {
-		const providers = this.getProviders();
-		const index = providers.findIndex(item => item.id === provider.id);
+		const index = this.providers.findIndex(item => item.id === provider.id);
+		const copy = { ...provider, models: provider.models.map(model => ({ ...model })) };
 		if (index >= 0) {
-			providers[index] = provider;
+			this.providers[index] = copy;
 		} else {
-			providers.push(provider);
+			this.providers.push(copy);
 		}
-		await this.context.globalState.update(PROVIDERS_KEY, providers);
 		this.changeEmitter.fire();
 	}
 
 	async deleteProvider(id: string): Promise<void> {
-		await this.context.globalState.update(
-			PROVIDERS_KEY,
-			this.getProviders().filter(provider => provider.id !== id),
-		);
+		this.providers = this.providers.filter(provider => provider.id !== id);
 		await this.deleteApiKey(id);
 		this.changeEmitter.fire();
 	}
