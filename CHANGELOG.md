@@ -1,5 +1,14 @@
 # Change Log
 
+## 0.1.27
+
+- Fixed the top-corner ✓ button on editor-style Quick Picks so it no longer activates the highlighted row.
+- In **Add Provider** and **Add Model**, ✓ now performs the same validation/save flow as the explicit Save action and closes on success.
+- In **Edit Provider** and **Edit Model**, ✓ now closes the editor because property changes are already applied when each field is edited.
+- In the request-header list, ✓ saves the edited header set and closes, while ×/Esc cancels the header changes made during that editor session.
+- In the single-header editor, ✓/× return to the header list; Enter on the `key` or `value` row is what opens that field.
+- Pure selection Quick Picks such as API type and boolean selectors still use ✓ to accept the currently selected item.
+
 ## 0.1.26
 
 - Reordered the model right-click menu into three groups.

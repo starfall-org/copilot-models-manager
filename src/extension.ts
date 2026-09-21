@@ -116,7 +116,7 @@ async function addProvider(
 			placeHolder: 'Edit provider fields, then choose Save Provider',
 			ignoreFocusOut: true,
 			matchOnDescription: true,
-		});
+		}, () => ({ label: '$(save) Save Provider', description: 'Create this provider', value: 'save' }));
 
 		if (!action) {
 			return;
@@ -196,7 +196,10 @@ async function addProvider(
 			}
 			case 'headers': {
 				const value = await editRequestHeaders('Shared Request Headers', draft.requestHeaders);
-				draft = { ...draft, requestHeaders: value };
+				if (value.cancelled) {
+					continue;
+				}
+				draft = { ...draft, requestHeaders: value.value };
 				break;
 			}
 			case 'save': {
@@ -257,7 +260,7 @@ async function editProvider(
 			title: `Edit ${provider.name}`,
 			placeHolder: 'Choose one provider property to edit',
 			ignoreFocusOut: true,
-		});
+		}, () => undefined);
 		if (!action) {
 			return;
 		}
@@ -345,7 +348,11 @@ async function editProvider(
 				break;
 			}
 			case 'headers': {
-				next.requestHeaders = await editRequestHeaders('Shared Request Headers', provider.requestHeaders);
+				const value = await editRequestHeaders('Shared Request Headers', provider.requestHeaders);
+				if (value.cancelled) {
+					continue;
+				}
+				next.requestHeaders = value.value;
 				break;
 			}
 		}
@@ -522,7 +529,7 @@ async function addManualModel(
 			placeHolder: 'Edit model fields, then choose Save Model',
 			ignoreFocusOut: true,
 			matchOnDescription: true,
-		});
+		}, () => ({ label: '$(save) Save Model', description: `Add model to ${provider.name}`, value: 'save' }));
 		if (!action) {
 			return;
 		}
@@ -671,10 +678,11 @@ async function addManualModel(
 				break;
 			}
 			case 'requestHeaders': {
-				draft = {
-					...draft,
-					requestHeaders: await editRequestHeaders('Request Headers', draft.requestHeaders),
-				};
+				const value = await editRequestHeaders('Request Headers', draft.requestHeaders);
+				if (value.cancelled) {
+					continue;
+				}
+				draft = { ...draft, requestHeaders: value.value };
 				break;
 			}
 			case 'save': {
@@ -742,7 +750,7 @@ async function editModel(
 			placeHolder: 'Choose one model property to edit',
 			ignoreFocusOut: true,
 			matchOnDescription: true,
-		});
+		}, () => undefined);
 		if (!action) {
 			return;
 		}
@@ -892,7 +900,11 @@ async function editModel(
 				break;
 			}
 			case 'requestHeaders': {
-				next.requestHeaders = await editRequestHeaders('Request Headers', model.requestHeaders);
+				const value = await editRequestHeaders('Request Headers', model.requestHeaders);
+				if (value.cancelled) {
+					continue;
+				}
+				next.requestHeaders = value.value;
 				break;
 			}
 		}
@@ -1142,6 +1154,7 @@ const QUICK_PICK_CANCEL_BUTTON: vscode.QuickInputButton = {
 async function showManagedQuickPick<T extends vscode.QuickPickItem>(
 	items: readonly T[],
 	options: vscode.QuickPickOptions,
+	acceptButtonResult?: () => T | undefined,
 ): Promise<T | undefined> {
 	return new Promise(resolve => {
 		const quickPick = vscode.window.createQuickPick<T>();
@@ -1167,7 +1180,9 @@ async function showManagedQuickPick<T extends vscode.QuickPickItem>(
 			quickPick.onDidAccept(() => finish(quickPick.selectedItems[0] ?? quickPick.activeItems[0])),
 			quickPick.onDidTriggerButton(button => {
 				if (button === QUICK_PICK_ACCEPT_BUTTON) {
-					finish(quickPick.selectedItems[0] ?? quickPick.activeItems[0]);
+					finish(acceptButtonResult
+						? acceptButtonResult()
+						: quickPick.selectedItems[0] ?? quickPick.activeItems[0]);
 				} else if (button === QUICK_PICK_CANCEL_BUTTON) {
 					finish(undefined);
 				}
@@ -1380,7 +1395,8 @@ interface HeaderQuickPickItem extends vscode.QuickPickItem {
 }
 
 type HeaderListAction =
-	| { type: 'back' }
+	| { type: 'save' }
+	| { type: 'cancel' }
 	| { type: 'add' }
 	| { type: 'edit'; key: string }
 	| { type: 'delete'; key: string };
@@ -1388,13 +1404,19 @@ type HeaderListAction =
 async function editRequestHeaders(
 	title: string,
 	current?: Record<string, string>,
-): Promise<Record<string, string> | undefined> {
+): Promise<{ cancelled: boolean; value: Record<string, string> | undefined }> {
 	const headers: Record<string, string> = { ...current };
 
 	while (true) {
 		const action = await showHeadersQuickPick(title, headers);
-		if (action.type === 'back') {
-			return Object.keys(headers).length ? headers : undefined;
+		if (action.type === 'save') {
+			return {
+				cancelled: false,
+				value: Object.keys(headers).length ? headers : undefined,
+			};
+		}
+		if (action.type === 'cancel') {
+			return { cancelled: true, value: current };
 		}
 
 		if (action.type === 'delete') {
@@ -1465,9 +1487,9 @@ function showHeadersQuickPick(
 			quickPick.onDidAccept(() => runItem(quickPick.selectedItems[0] ?? quickPick.activeItems[0])),
 			quickPick.onDidTriggerButton(button => {
 				if (button === QUICK_PICK_ACCEPT_BUTTON) {
-					runItem(quickPick.selectedItems[0] ?? quickPick.activeItems[0]);
+					finish({ type: 'save' });
 				} else if (button === QUICK_PICK_CANCEL_BUTTON) {
-					finish({ type: 'back' });
+					finish({ type: 'cancel' });
 				}
 			}),
 			quickPick.onDidTriggerItemButton(event => {
@@ -1484,7 +1506,7 @@ function showHeadersQuickPick(
 			quickPick.onDidHide(() => {
 				if (!settled) {
 					settled = true;
-					resolve({ type: 'back' });
+					resolve({ type: 'cancel' });
 				}
 				for (const disposable of disposables) {
 					disposable.dispose();
@@ -1547,7 +1569,7 @@ async function editSingleHeader(
 			placeHolder: 'Choose key or value to edit',
 			ignoreFocusOut: true,
 			matchOnDescription: true,
-		});
+		}, () => undefined);
 		if (!action) {
 			return;
 		}
