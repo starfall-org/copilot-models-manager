@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { CopilotConfigService } from './copilotConfig';
+import { CopilotConfigError, CopilotConfigService } from './copilotConfig';
 import { defaultContextWindow, defaultMaxOutputTokens, discoverModels, normalizeBaseUrl } from './providerClient';
 import { ProviderStore } from './providerStore';
 import { ModelNode, ModelsTreeProvider, ProviderNode } from './modelsTree';
@@ -14,6 +14,8 @@ interface ModelReference {
 
 type ModelTarget = ModelReference | ModelNode;
 
+let outputChannel: vscode.OutputChannel | undefined;
+
 const API_TYPES: Array<{ label: string; description: string; value: ApiType }> = [
 	{ label: 'Chat Completions', description: 'OpenAI-compatible /v1/chat/completions', value: 'chat-completions' },
 	{ label: 'Responses', description: 'OpenAI-compatible /v1/responses', value: 'responses' },
@@ -21,6 +23,7 @@ const API_TYPES: Array<{ label: string; description: string; value: ApiType }> =
 ];
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+	outputChannel = vscode.window.createOutputChannel('Copilot Models Manager');
 	const store = new ProviderStore(context);
 	const config = new CopilotConfigService(store);
 	const tree = new ModelsTreeProvider(store);
@@ -37,14 +40,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 		reloadTimer = setTimeout(() => {
 			void config.loadProviders()
 				.then(providers => store.replaceAll(providers))
-				.catch(error => {
-					const message = error instanceof Error ? error.message : String(error);
-					void vscode.window.showErrorMessage(`Copilot Models Manager: ${message}`);
-				});
+				.catch(error => logExtensionError('Reload chatLanguageModels.json', error));
 		}, 100);
 	};
 
 	context.subscriptions.push(
+		outputChannel,
 		store,
 		configWatcher,
 		{ dispose: () => reloadTimer && clearTimeout(reloadTimer) },
@@ -70,7 +71,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 		register('copilotModelsManager.openConfig', () => config.openConfig()),
 	);
 
-	store.replaceAll(await config.loadProviders());
+	try {
+		store.replaceAll(await config.loadProviders());
+	} catch (error) {
+		logExtensionError('Initial chatLanguageModels.json load', error);
+	}
 }
 
 function register(command: string, callback: (...args: any[]) => unknown): vscode.Disposable {
@@ -78,10 +83,23 @@ function register(command: string, callback: (...args: any[]) => unknown): vscod
 		try {
 			await callback(...args);
 		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			void vscode.window.showErrorMessage(`Copilot Models Manager: ${message}`);
+			logExtensionError(command, error);
+			if (!(error instanceof CopilotConfigError)) {
+				const message = error instanceof Error ? error.message : String(error);
+				void vscode.window.showErrorMessage(`Copilot Models Manager: ${message}`);
+			}
 		}
 	});
+}
+
+function logExtensionError(scope: string, error: unknown): void {
+	const message = error instanceof Error
+		? `${error.name}: ${error.message}`
+		: String(error);
+	outputChannel?.appendLine(`[${new Date().toISOString()}] [${scope}] ${message}`);
+	if (error instanceof Error && error.stack) {
+		outputChannel?.appendLine(error.stack);
+	}
 }
 
 async function addProvider(
@@ -1098,15 +1116,28 @@ function mergeDiscoveredModels(discovered: DiscoveredModel[], current: ManagedMo
 	if (!discovered.length) {
 		return current;
 	}
-	const existing = new Map(current.map(model => [model.id, model]));
-	const discoveredIds = new Set(discovered.map(model => model.id));
-	const models = discovered.map(model => mergeDiscoveredModel(model, existing.get(model.id), false));
 
+	const remaining = new Map(discovered.map(model => [model.id, model]));
+	const models: ManagedModel[] = [];
+
+	// Preserve the existing model order. Models discovered for the first time are
+	// appended afterwards so newly added models never jump ahead of older ones.
 	for (const model of current) {
-		if (model.source === 'manual' && !discoveredIds.has(model.id)) {
+		const refreshed = remaining.get(model.id);
+		if (refreshed) {
+			models.push(mergeDiscoveredModel(refreshed, model, false));
+			remaining.delete(model.id);
+		} else if (model.source === 'manual') {
 			models.push(model);
 		}
 	}
+
+	for (const model of discovered) {
+		if (remaining.has(model.id)) {
+			models.push(mergeDiscoveredModel(model, undefined, false));
+		}
+	}
+
 	return models;
 }
 

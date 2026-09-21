@@ -1,5 +1,19 @@
 # Change Log
 
+## 0.1.29
+
+- Invalid or temporarily incomplete `chatLanguageModels.json` no longer triggers VS Code error popups.
+- Config parse/read/root-shape errors are written to the **Copilot Models Manager** output log instead.
+- File-watcher reload failures keep the current in-memory provider state rather than replacing it.
+- Commands that encounter an invalid config log the config error without showing a notification and do not overwrite the invalid file.
+- Includes the model-order fix from 0.1.28: existing models retain their order and newly discovered/added models are appended to the end.
+
+## 0.1.28
+
+- Preserve the existing model order when merging results from Fetch Models.
+- Models discovered or added for the first time are appended to the end instead of being inserted before existing models.
+- Manually added models continue to remain at the end position where they were added.
+
 ## 0.1.27
 
 - Fixed the top-corner ✓ button on editor-style Quick Picks so it no longer activates the highlighted row.

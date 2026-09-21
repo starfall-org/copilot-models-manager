@@ -16,6 +16,13 @@ import {
 
 const SUPPORTED_API_TYPES = new Set<ApiType>(['chat-completions', 'responses', 'messages']);
 
+export class CopilotConfigError extends Error {
+	constructor(message: string, options?: ErrorOptions) {
+		super(message, options);
+		this.name = 'CopilotConfigError';
+	}
+}
+
 export class CopilotConfigService {
 	constructor(private readonly store: ProviderStore) {}
 
@@ -65,20 +72,24 @@ export class CopilotConfigService {
 				value = JSON.parse(normalizeJsonc(text)) as unknown;
 			} catch (error) {
 				const detail = error instanceof Error ? error.message : String(error);
-				throw new Error(`Cannot parse ${configPath}: ${detail}`);
+				throw new CopilotConfigError(`Cannot parse ${configPath}: ${detail}`, { cause: error });
 			}
 			if (value === undefined || value === null) {
 				return [];
 			}
 			if (!Array.isArray(value)) {
-				throw new Error(`${configPath} must contain a JSON array.`);
+				throw new CopilotConfigError(`${configPath} must contain a JSON array.`);
 			}
 			return value;
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
 				return [];
 			}
-			throw error;
+			if (error instanceof CopilotConfigError) {
+				throw error;
+			}
+			const detail = error instanceof Error ? error.message : String(error);
+			throw new CopilotConfigError(`Cannot read ${configPath}: ${detail}`, { cause: error });
 		}
 	}
 
