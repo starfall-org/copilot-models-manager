@@ -37,7 +37,6 @@ export class ModelsTreeProvider implements vscode.TreeDataProvider<ModelsTreeNod
 			);
 			item.id = `provider:${provider.id}`;
 			item.contextValue = 'copilotModelsManager.provider';
-			item.iconPath = new vscode.ThemeIcon('server-environment');
 			item.description = `${provider.apiType} · ${selected} models`;
 			item.tooltip = new vscode.MarkdownString(
 				[

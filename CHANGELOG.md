@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.1.30
+
+- Changed the extension sidebar container icon to the `settings` Codicon.
+- Removed the icon from provider rows in the provider tree while keeping model-row icons unchanged.
+
 ## 0.1.29
 
 - Invalid or temporarily incomplete `chatLanguageModels.json` no longer triggers VS Code error popups.
