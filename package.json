@@ -2,7 +2,7 @@
   "name": "copilot-models-manager",
   "displayName": "Copilot Models Manager",
   "description": "Manage Custom Endpoint providers and models used by GitHub Copilot without reimplementing the model runtime.",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "publisher": "starfall-org",
   "engines": {
     "vscode": "^1.138.0"
@@ -56,7 +56,7 @@
         {
           "id": "copilotModelsManager.providers",
           "name": "Providers",
-          "icon": "$(server-environment)",
+          "icon": "$(settings)",
           "contextualTitle": "Copilot Model Providers"
         }
       ]
