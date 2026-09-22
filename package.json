@@ -271,6 +271,6 @@
     "type": "git",
     "url": "https://github.com/starfall-org/copilot-models-manager.git"
   },
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "icon": "assets/icon.png"
 }
