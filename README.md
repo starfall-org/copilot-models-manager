@@ -2,6 +2,9 @@
 
 Copilot Models Manager is a VS Code UI layer for managing GitHub Copilot **Custom Endpoint** models.
 
+> [!IMPORTANT]
+> **Source-available for transparency, not open source.** The source code is published so users can inspect, audit, and understand the software. Commercial use, redistribution, sublicensing, and public distribution of modified or unmodified copies are prohibited unless Starfall Orbit grants separate written permission. See [LICENSE](./LICENSE).
+
 The extension does **not** implement its own language-model runtime. It discovers provider models, lets you choose and configure them, and writes the resulting entries to VS Code's `chatLanguageModels.json`. GitHub Copilot / VS Code then handles requests, streaming, tools, agent integration, and model execution through the built-in `customendpoint` provider.
 
 ## Features

@@ -1,21 +1,102 @@
-MIT License
+Starfall Orbit Source-Available Non-Commercial License v1.0
 
-Copyright (c) 2026 starfall-org
+Copyright (c) 2026 Starfall Orbit. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. Purpose
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+The source code for Copilot Models Manager is made publicly available solely
+to provide software transparency and to allow independent inspection, audit,
+study, education, and security review.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+This is a source-available license. It is not an open-source license or a
+free-software license.
+
+2. Permission
+
+Subject to the terms of this License, Starfall Orbit grants you a limited,
+non-exclusive, non-transferable, non-sublicensable, royalty-free permission to:
+
+(a) access, view, inspect, and study the Source Code;
+(b) download and make copies of the Source Code for your own non-commercial
+    evaluation, research, education, or security review;
+(c) modify the Source Code privately for your own non-commercial evaluation,
+    research, education, or personal use; and
+(d) run the Software for personal, educational, research, or other
+    non-commercial purposes.
+
+No rights are granted except those expressly stated in this License.
+
+3. Commercial Use Prohibited
+
+You may not use the Software or Source Code, in whole or in part, for any
+Commercial Purpose without prior written permission from Starfall Orbit.
+
+"Commercial Purpose" means any use primarily intended for or directed toward
+commercial advantage, business operations, or monetary compensation, including
+without limitation:
+
+(a) use by or for a for-profit business as part of its internal operations;
+(b) incorporation into, or use to develop, a product or service that is sold,
+    licensed, subscribed to, monetized, or otherwise offered for commercial
+    advantage;
+(c) selling, licensing, sublicensing, renting, hosting, or providing the
+    Software or a derivative work as a paid product or service;
+(d) providing paid support, consulting, integration, hosting, or managed
+    services based on the Software; or
+(e) use in a product, service, website, application, or workflow that generates
+    revenue directly or indirectly, including through fees, subscriptions,
+    advertising, or sponsorship.
+
+4. Redistribution and Publication
+
+Except for functionality expressly made available by GitHub for interacting
+with public repositories under GitHub's Terms of Service, you may not
+redistribute, republish, sublicense, sell, or publicly distribute the Software,
+the Source Code, or derivative works without prior written permission from
+Starfall Orbit.
+
+GitHub platform rights, including any right to fork a public repository within
+GitHub, do not grant additional commercial, redistribution, relicensing, or
+off-platform rights under this License.
+
+5. Notices and Attribution
+
+You may not remove or alter copyright, license, authorship, trademark, or other
+proprietary notices contained in the Software or Source Code.
+
+6. No Trademark or Patent License
+
+This License does not grant permission to use the names, logos, trademarks, or
+service marks of Starfall Orbit or its projects.
+
+No patent license is granted except to the minimum extent, if any, required by
+applicable law to exercise the permissions expressly granted in Section 2.
+
+7. Separate Permission
+
+Commercial use, redistribution, publication, sublicensing, or other rights not
+granted by this License require separate prior written permission from
+Starfall Orbit.
+
+8. Termination
+
+Your rights under this License terminate automatically if you violate any term
+of this License. Upon termination, you must stop exercising the rights granted
+by this License and delete copies made under those permissions, except where
+retention is required by law.
+
+9. Disclaimer of Warranty
+
+THE SOFTWARE AND SOURCE CODE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, STARFALL ORBIT AND THE AUTHORS SHALL NOT
+BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM, OUT OF, OR IN
+CONNECTION WITH THE SOFTWARE, SOURCE CODE, OR THEIR USE.
+
+10. Applicable Law
+
+Nothing in this License limits any right you may have under applicable law that
+cannot lawfully be restricted by contract or copyright license, including
+applicable exceptions and limitations to copyright.

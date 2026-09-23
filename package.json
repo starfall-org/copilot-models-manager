@@ -270,8 +270,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/starfall-org/copilot-models-manager.git"
+    "url": "https://github.com/starfall-orbit/copilot-models-manager.git"
   },
-  "license": "GPL-3.0-only",
+  "license": "SEE LICENSE IN LICENSE",
   "icon": "assets/icon.png"
 }
