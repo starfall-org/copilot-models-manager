@@ -60,6 +60,7 @@ export async function addProvider(
 			{ label: '$(link) baseUrl', description: draft.baseUrl || 'Required', value: 'url' },
 			{ label: '$(symbol-enum) apiType', description: draft.apiType, value: 'type' },
 			{ label: '$(key) discoveryApiKey', description: discoveryApiKey ? 'Set' : 'Unset', value: 'key' },
+			{ label: '$(list-selection) Models', description: `${draft.models.filter(model => model.enabled !== false).length} selected`, value: 'models' },
 			{ label: '$(settings-gear) Open Copilot Manage…', description: draft.name ? `Filter: ${draft.name}` : 'Set provider name first', value: 'copilotManage' },
 			{ label: '$(list-unordered) modelsPath', description: draft.modelsPath || 'Automatic /v1/models', value: 'modelsPath' },
 			{ label: '$(json) requestHeaders', description: draft.requestHeaders ? JSON.stringify(draft.requestHeaders) : 'Unset', value: 'headers' },
@@ -135,6 +136,18 @@ export async function addProvider(
 				discoveryApiKeyChanged = true;
 				break;
 			}
+			case 'models': {
+				if (!draft.name.trim() || !draft.baseUrl.trim() || validateHttpUrl(draft.baseUrl)) {
+					void vscode.window.showWarningMessage('Set the provider name and a valid base URL before fetching models.');
+					continue;
+				}
+				const models = await fetchProviderModels(draft, discoveryApiKey);
+				if (!models) {
+					continue;
+				}
+				draft = { ...draft, models };
+				break;
+			}
 			case 'copilotManage': {
 				if (!draft.name.trim()) {
 					void vscode.window.showWarningMessage('Set the provider name before opening Copilot Manage Language Models.');
@@ -190,6 +203,7 @@ export async function editProvider(
 			{ label: '$(link) Change Base URL', value: 'url' },
 			{ label: '$(symbol-enum) Change API Type', value: 'type' },
 			{ label: '$(key) Update Discovery API Key', value: 'key' },
+			{ label: '$(list-selection) Models', description: `${provider.models.filter(model => model.enabled !== false).length} selected`, value: 'models' },
 			{ label: '$(settings-gear) Manage Language Models', value: 'copilotKey' },
 			{ label: '$(list-unordered) Set Model List Endpoint', value: 'modelsPath' },
 			{ label: '$(json) Set Shared Request Headers', value: 'headers' },
@@ -263,6 +277,14 @@ export async function editProvider(
 					await store.deleteApiKey(provider.id);
 				}
 				changed = false;
+				break;
+			}
+			case 'models': {
+				const models = await fetchProviderModels(provider, await store.getApiKey(provider.id));
+				if (!models) {
+					continue;
+				}
+				next.models = models;
 				break;
 			}
 			case 'copilotKey': {
@@ -342,7 +364,19 @@ export async function refreshProvider(
 		return;
 	}
 
-	const apiKey = await store.getApiKey(provider.id);
+	const models = await fetchProviderModels(provider, await store.getApiKey(provider.id));
+	if (!models) {
+		return;
+	}
+
+	await store.saveProvider({ ...provider, models, updatedAt: Date.now() });
+	await persistAndRefresh(store, config, tree);
+}
+
+async function fetchProviderModels(
+	provider: ManagedProvider,
+	apiKey: string | undefined,
+): Promise<ManagedProvider['models'] | undefined> {
 	const discovered = await withDiscovery(provider, apiKey);
 	if (!discovered.length) {
 		void vscode.window.showInformationMessage(`${provider.name} returned no models.`);
@@ -354,12 +388,10 @@ export async function refreshProvider(
 		return;
 	}
 
-	const models = mergeDiscoveredModels(discovered, provider.models).map(model => ({
+	return mergeDiscoveredModels(discovered, provider.models).map(model => ({
 		...model,
 		enabled: selectedIds.has(model.id),
 	}));
-	await store.saveProvider({ ...provider, models, updatedAt: Date.now() });
-	await persistAndRefresh(store, config, tree);
 }
 
 export async function refreshAll(
