@@ -68,7 +68,7 @@
     "commands": [
       {
         "command": "copilotModelsManager.addProvider",
-        "title": "Copilot Models: Add Provider",
+        "title": "Add Model Provider",
         "icon": "$(add)"
       },
       {
