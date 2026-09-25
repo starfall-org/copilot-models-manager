@@ -2,7 +2,7 @@
   "name": "copilot-models-manager",
   "displayName": "Copilot Models Manager",
   "description": "Manage Custom Endpoint providers and models used by GitHub Copilot without reimplementing the model runtime.",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "publisher": "starfall-orbit",
   "engines": {
     "vscode": "^1.138.0"
@@ -70,6 +70,14 @@
         "command": "copilotModelsManager.addProvider",
         "title": "Copilot Models: Add Provider",
         "icon": "$(add)"
+      },
+      {
+        "command": "copilotModelsManager.openManageLanguageModels",
+        "title": "Manage Language Models"
+      },
+      {
+        "command": "copilotModelsManager.openConfig",
+        "title": "Open Language Models (JSON)"
       },
       {
         "command": "copilotModelsManager.editProvider",
@@ -140,12 +148,12 @@
           "group": "inline@1"
         },
         {
-          "command": "workbench.action.openLanguageModelsJson",
+          "command": "copilotModelsManager.openConfig",
           "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.root",
           "group": "manage@98"
         },
         {
-          "command": "workbench.action.chat.manageLanguageModelAuthentication",
+          "command": "copilotModelsManager.openManageLanguageModels",
           "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.root",
           "group": "manage@99"
         },
