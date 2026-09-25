@@ -29,7 +29,7 @@
     "onCommand:copilotModelsManager.refreshProvider",
     "onCommand:copilotModelsManager.refreshAll",
     "onCommand:copilotModelsManager.deleteProvider",
-    "onCommand:copilotModelsManager.addManualModel",
+    "onCommand:copilotModelsManager.addModel",
     "onCommand:copilotModelsManager.editModel",
     "onCommand:copilotModelsManager.removeModel",
     "onCommand:copilotModelsManager.manageCopilotApiKey",
@@ -68,7 +68,7 @@
     "commands": [
       {
         "command": "copilotModelsManager.addProvider",
-        "title": "Add Model Provider",
+        "title": "Add Provider",
         "icon": "$(add)"
       },
       {
@@ -101,7 +101,7 @@
       },
       {
         "command": "copilotModelsManager.refreshAll",
-        "title": "Copilot Models: Refresh All Providers",
+        "title": "Refresh All Providers",
         "icon": "$(refresh)"
       },
       {
@@ -110,8 +110,8 @@
         "icon": "$(trash)"
       },
       {
-        "command": "copilotModelsManager.addManualModel",
-        "title": "Add Model Manually",
+        "command": "copilotModelsManager.addModel",
+        "title": "Add Model",
         "icon": "$(add)"
       },
       {
@@ -178,7 +178,7 @@
           "group": "models@0"
         },
         {
-          "command": "copilotModelsManager.addManualModel",
+          "command": "copilotModelsManager.addModel",
           "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
           "group": "models@1"
         },

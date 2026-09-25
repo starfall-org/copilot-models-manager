@@ -5,7 +5,7 @@ import { ProviderStore } from './providerStore';
 import { ModelsTreeProvider, ProviderNode } from './modelsTree';
 import { ModelTarget } from './commandShared';
 import { addProvider, editProvider, copyProviderApiKey, manageCopilotApiKey, refreshProvider, refreshAll, deleteProvider } from './providerCommands';
-import { addManualModel, editModel, copyModelId, setModelThinking, removeModel } from './modelCommands';
+import { addModel, editModel, copyModelId, setModelThinking, removeModel } from './modelCommands';
 
 let outputChannel: vscode.OutputChannel | undefined;
 
@@ -50,7 +50,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 		register('copilotModelsManager.refreshProvider', (node?: ProviderNode) => refreshProvider(store, config, tree, node)),
 		register('copilotModelsManager.refreshAll', () => refreshAll(store, config, tree)),
 		register('copilotModelsManager.deleteProvider', (node?: ProviderNode) => deleteProvider(store, config, tree, node)),
-		register('copilotModelsManager.addManualModel', (node?: ProviderNode) => addManualModel(store, config, tree, node)),
+		register('copilotModelsManager.addModel', (node?: ProviderNode) => addModel(store, config, tree, node)),
 		register('copilotModelsManager.editModel', (node?: ModelTarget) => editModel(store, config, tree, node)),
 		register('copilotModelsManager.copyModelId', (node?: ModelTarget) => copyModelId(store, node)),
 		register('copilotModelsManager.setThinking', (node?: ModelTarget) => setModelThinking(store, config, tree, node, true)),

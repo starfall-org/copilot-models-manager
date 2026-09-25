@@ -7,7 +7,7 @@ import { ManagedModel } from './types';
 import { ModelTarget, persistAndRefresh, resolveProvider, resolveModel } from './commandShared';
 import { showManagedQuickPick, pickRequiredBoolean, pickOptionalBoolean, pickOptionalApiType, pickEditTools, optionalBooleanLabel, optionalNumberLabel, editRequestHeaders, editJsonObject, validateHttpUrl, validateObjectJson, askOptionalPositiveInteger } from './quickInput';
 
-export async function addManualModel(
+export async function addModel(
 	store: ProviderStore,
 	config: CopilotConfigService,
 	tree: ModelsTreeProvider,
