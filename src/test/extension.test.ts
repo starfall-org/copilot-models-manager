@@ -1,10 +1,26 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { mergeManagedProviderGroups } from '../copilotConfig';
+import { hasConflictingProviderGroupName, mergeManagedProviderGroups } from '../copilotConfig';
 import { CopilotProviderGroup } from '../types';
 
 suite('Extension Test Suite', () => {
 	vscode.window.showInformationMessage('Start all tests.');
+
+	test('provider name check excludes its own saved group but still rejects other groups', () => {
+		const groups = [
+			{ name: 'Mine', vendor: 'customendpoint', copilotModelsManager: {
+				id: 'my-id', baseUrl: 'https://mine.example.com',
+			} },
+			{ name: 'Other', vendor: 'customendpoint', copilotModelsManager: {
+				id: 'other-id', baseUrl: 'https://other.example.com',
+			} },
+			{ name: 'External', vendor: 'customendpoint' },
+		];
+		assert.strictEqual(hasConflictingProviderGroupName(groups, 'mine', 'my-id'), false);
+		assert.strictEqual(hasConflictingProviderGroupName(groups, 'other', 'my-id'), true);
+		assert.strictEqual(hasConflictingProviderGroupName(groups, 'external', 'my-id'), true);
+		assert.strictEqual(hasConflictingProviderGroupName(groups, 'mine'), true);
+	});
 
 	test('foreign vendors and unknown entries remain opaque', () => {
 		const foreignVendor = {

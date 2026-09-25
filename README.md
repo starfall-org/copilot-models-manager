@@ -10,7 +10,7 @@ The extension does **not** implement its own language-model runtime. It discover
 ## Features
 
 - Dedicated **Copilot Models** view container in the **Secondary Side Bar**, beside Chat/Copilot.
-- Add Provider opens a draft editor where fields can be changed in any order and saved explicitly.
+- Add Provider accepts fields in any order and automatically saves each completed edit once the provider name and base URL are valid.
 - Add a provider with:
   - display name
   - API type
@@ -125,7 +125,7 @@ There are two separate secret stores involved:
 
 The extension treats the existing `apiKey` field in `chatLanguageModels.json` as opaque configuration. If the field already exists, its exact value is preserved on every rewrite; the extension does not normalize, replace, or delete it.
 
-For a newly added provider, use **Update Copilot API Key…** from the provider context menu. The extension opens VS Code's **Manage Language Models** page filtered to that provider; choose **Update API Key** there. VS Code stores that key in its own secure storage and updates `chatLanguageModels.json` with the secret reference. The extension's file watcher then reloads and preserves that reference on every later edit.
+For a newly added provider, use **Manage Language Models** from the provider context menu. The extension opens VS Code's **Manage Language Models** page filtered to that provider; choose **Update API Key** there. VS Code stores that key in its own secure storage and updates `chatLanguageModels.json` with the secret reference. The extension's file watcher then reloads and preserves that reference on every later edit.
 
 VS Code's public extension API does not expose a supported way for one extension to seed the built-in Language Models secret store directly, so this one-time binding cannot safely be replaced with this extension's own `SecretStorage`.
 
@@ -155,7 +155,7 @@ Use the **Copilot Models** view toolbar or Command Palette:
 
 - Copilot Models: Add Provider
 - Copilot Models: Refresh All Providers
-- Copilot Models: Open chatLanguageModels.json
+- Open Language Models JSON (`workbench.action.openLanguageModelsJson`, built into VS Code; opens the current profile's configuration)
 
 Provider and model-specific actions are available from each tree item's context menu.
 

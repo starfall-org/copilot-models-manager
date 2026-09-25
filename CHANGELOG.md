@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.1.33
+
+- Fixed Add Provider autosave after the first save: subsequent field changes now recognize the provider's own config entry.
+- Clearing the Discovery API Key in Add Provider now removes the previously saved secret.
+- Split the extension command handlers, model discovery, and input helpers into focused modules.
+
 ## 0.1.30
 
 - Changed the extension sidebar container icon to the `settings` Codicon.

@@ -2,7 +2,12 @@ import * as vscode from 'vscode';
 import { ManagedModel, ManagedProvider } from './types';
 import { ProviderStore } from './providerStore';
 
-export type ModelsTreeNode = ProviderNode | ModelNode;
+export type ModelsTreeNode = RootNode | ProviderNode | ModelNode;
+
+export class RootNode {
+	readonly kind = 'root';
+	constructor(public readonly label: string) {}
+}
 
 export class ProviderNode {
 	readonly kind = 'provider';
@@ -28,12 +33,19 @@ export class ModelsTreeProvider implements vscode.TreeDataProvider<ModelsTreeNod
 	}
 
 	getTreeItem(element: ModelsTreeNode): vscode.TreeItem {
+		if (element.kind === 'root') {
+			const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.Expanded);
+			item.id = 'root:providers';
+			item.contextValue = 'copilotModelsManager.root';
+			return item;
+		}
+
 		if (element.kind === 'provider') {
 			const provider = element.provider;
 			const selected = provider.models.filter(model => model.enabled !== false).length;
 			const item = new vscode.TreeItem(
 				provider.name,
-				selected > 0 ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None,
+				selected > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
 			);
 			item.id = `provider:${provider.id}`;
 			item.contextValue = 'copilotModelsManager.provider';
@@ -86,6 +98,9 @@ export class ModelsTreeProvider implements vscode.TreeDataProvider<ModelsTreeNod
 
 	getChildren(element?: ModelsTreeNode): ModelsTreeNode[] {
 		if (!element) {
+			return [new RootNode('Model Providers')];
+		}
+		if (element.kind === 'root') {
 			return this.store.getProviders().map(provider => new ProviderNode(provider));
 		}
 		if (element.kind === 'provider') {

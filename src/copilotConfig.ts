@@ -156,24 +156,8 @@ export class CopilotConfigService {
 		return configPath;
 	}
 
-	async hasProviderGroupName(name: string): Promise<boolean> {
-		const groups = await this.readGroups();
-		return groups.some(entry => {
-			const group = asCustomEndpointGroup(entry);
-			return typeof group?.name === 'string' && group.name.toLocaleLowerCase() === name.toLocaleLowerCase();
-		});
-	}
-
-	async openConfig(): Promise<void> {
-		const configPath = this.getConfigPath();
-		await fs.mkdir(path.dirname(configPath), { recursive: true });
-		try {
-			await fs.access(configPath);
-		} catch {
-			await fs.writeFile(configPath, '[]\n', 'utf8');
-		}
-		const document = await vscode.workspace.openTextDocument(vscode.Uri.file(configPath));
-		await vscode.window.showTextDocument(document);
+	async hasProviderGroupName(name: string, excludeProviderId?: string): Promise<boolean> {
+		return hasConflictingProviderGroupName(await this.readGroups(), name, excludeProviderId);
 	}
 
 	private async writeGroups(groups: unknown[]): Promise<void> {
@@ -288,6 +272,17 @@ export class CopilotConfigService {
 		}
 		return path.resolve(value);
 	}
+}
+
+export function hasConflictingProviderGroupName(
+	groups: unknown[], name: string, excludeProviderId?: string,
+): boolean {
+	return groups.some(entry => {
+		const group = asCustomEndpointGroup(entry);
+		return typeof group?.name === 'string'
+			&& group.name.toLocaleLowerCase() === name.toLocaleLowerCase()
+			&& asManagerMetadata(group.copilotModelsManager)?.id !== excludeProviderId;
+	});
 }
 
 export function mergeManagedProviderGroups(
