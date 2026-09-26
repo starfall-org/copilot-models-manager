@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import * as vscode from 'vscode';
 import { CopilotConfigService } from './copilotConfig';
-import { discoverModels, normalizeBaseUrl } from './providerClient';
+import { discoverModels, isModelDiscoveryAuthError, normalizeBaseUrl } from './providerClient';
 import { ProviderStore } from './providerStore';
 import { ModelsTreeProvider, ProviderNode } from './modelsTree';
 import { ManagedProvider } from './types';
@@ -143,7 +143,10 @@ export async function addProvider(
 					void vscode.window.showWarningMessage('Set the provider name and a valid base URL before fetching models.');
 					continue;
 				}
-				const models = await fetchProviderModels(draft, discoveryApiKey);
+				const models = await fetchProviderModelsWithApiKeyPrompt(draft, discoveryApiKey, async apiKey => {
+					discoveryApiKey = apiKey;
+					discoveryApiKeyChanged = true;
+				});
 				if (!models) {
 					continue;
 				}
@@ -285,7 +288,7 @@ export async function editProvider(
 				break;
 			}
 			case 'models': {
-				const models = await fetchProviderModels(provider, await store.getApiKey(provider.id));
+				const models = await fetchProviderModelsWithApiKeyPrompt(provider, await store.getApiKey(provider.id), apiKey => store.setApiKey(provider.id, apiKey));
 				if (!models) {
 					continue;
 				}
@@ -343,7 +346,20 @@ export async function copyProviderApiKey(
 	}
 	const apiKey = await store.getApiKey(provider.id);
 	if (!apiKey) {
-		void vscode.window.showInformationMessage(`${provider.name} has no stored API key to copy.`);
+		const action = await vscode.window.showInformationMessage(
+			`${provider.name} has no stored API key to copy.`,
+			'Add API Key',
+		);
+		if (action !== 'Add API Key') {
+			return;
+		}
+		const addedApiKey = await promptDiscoveryApiKey(provider.name);
+		if (!addedApiKey) {
+			return;
+		}
+		await store.setApiKey(provider.id, addedApiKey);
+		await vscode.env.clipboard.writeText(addedApiKey);
+		void vscode.window.showInformationMessage(`API key for ${provider.name} added and copied to clipboard.`);
 		return;
 	}
 	await vscode.env.clipboard.writeText(apiKey);
@@ -376,13 +392,51 @@ export async function refreshProvider(
 		return;
 	}
 
-	const models = await fetchProviderModels(provider, await store.getApiKey(provider.id));
+	const models = await fetchProviderModelsWithApiKeyPrompt(provider, await store.getApiKey(provider.id), apiKey => store.setApiKey(provider.id, apiKey));
 	if (!models) {
 		return;
 	}
 
 	await store.saveProvider({ ...provider, models, updatedAt: Date.now() });
 	await persistAndRefresh(store, config, tree);
+}
+
+async function promptDiscoveryApiKey(providerName: string): Promise<string | undefined> {
+	const value = await vscode.window.showInputBox({
+		title: `Discovery API Key — ${providerName}`,
+		prompt: 'Enter the API key used to fetch the provider model list.',
+		password: true,
+		ignoreFocusOut: true,
+		validateInput: input => input.trim() ? undefined : 'API key is required.',
+	});
+	return value?.trim() || undefined;
+}
+
+async function fetchProviderModelsWithApiKeyPrompt(
+	provider: ManagedProvider,
+	apiKey: string | undefined,
+	saveApiKey: (apiKey: string) => Promise<void>,
+): Promise<ManagedProvider['models'] | undefined> {
+	try {
+		return await fetchProviderModels(provider, apiKey);
+	} catch (error) {
+		if (apiKey || !isModelDiscoveryAuthError(error)) {
+			throw error;
+		}
+		const action = await vscode.window.showWarningMessage(
+			`${provider.name} requires an API key to fetch models.`,
+			'Add API Key',
+		);
+		if (action !== 'Add API Key') {
+			return undefined;
+		}
+		const addedApiKey = await promptDiscoveryApiKey(provider.name);
+		if (!addedApiKey) {
+			return undefined;
+		}
+		await saveApiKey(addedApiKey);
+		return fetchProviderModels(provider, addedApiKey);
+	}
 }
 
 async function fetchProviderModels(

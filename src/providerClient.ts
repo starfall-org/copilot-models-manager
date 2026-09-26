@@ -6,6 +6,21 @@ const API_PATHS: Record<ApiType, string> = {
 	messages: 'messages',
 };
 
+export class ModelDiscoveryHttpError extends Error {
+	constructor(
+		public readonly status: number,
+		public readonly statusText: string,
+		public readonly body: string,
+	) {
+		super(`Model discovery failed: HTTP ${status} ${statusText}${body ? ` — ${body.slice(0, 300)}` : ''}`);
+		this.name = 'ModelDiscoveryHttpError';
+	}
+}
+
+export function isModelDiscoveryAuthError(error: unknown): error is ModelDiscoveryHttpError {
+	return error instanceof ModelDiscoveryHttpError && (error.status === 401 || error.status === 403);
+}
+
 export function normalizeBaseUrl(value: string): string {
 	return value.trim().replace(/\/+$/, '');
 }
@@ -178,7 +193,7 @@ export async function discoverModels(provider: ManagedProvider, apiKey: string |
 	const response = await fetch(url, { headers });
 	if (!response.ok) {
 		const body = await response.text();
-		throw new Error(`Model discovery failed: HTTP ${response.status} ${response.statusText}${body ? ` — ${body.slice(0, 300)}` : ''}`);
+		throw new ModelDiscoveryHttpError(response.status, response.statusText, body);
 	}
 
 	const payload = await response.json() as unknown;

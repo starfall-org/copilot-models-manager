@@ -4,11 +4,39 @@ import { ProviderStore } from './providerStore';
 
 const PROVIDER_SORT_STATE_KEY = 'providerSortMode';
 
-export type ProviderSortBy = 'time' | 'name';
+export type ProviderSortBy = 'time' | 'name' | 'quantity';
 export type ProviderSortDirection = 'ascending' | 'descending';
 export interface ProviderSortState {
 	by: ProviderSortBy;
 	direction: ProviderSortDirection;
+}
+
+export function sortManagedProviders(
+	providers: readonly ManagedProvider[],
+	sortState: ProviderSortState,
+): ManagedProvider[] {
+	const direction = sortState.direction === 'ascending' ? 1 : -1;
+	return [...providers].sort((left, right) => {
+		if (sortState.by === 'name') {
+			return direction * left.name.localeCompare(
+				right.name,
+				undefined,
+				{ sensitivity: 'base', numeric: true },
+			);
+		}
+		if (sortState.by === 'quantity') {
+			const leftCount = left.models.filter(model => model.enabled !== false).length;
+			const rightCount = right.models.filter(model => model.enabled !== false).length;
+			const quantityComparison = leftCount - rightCount;
+			return quantityComparison !== 0
+				? direction * quantityComparison
+				: left.name.localeCompare(right.name, undefined, { sensitivity: 'base', numeric: true });
+		}
+		const timeComparison = left.createdAt - right.createdAt;
+		return timeComparison !== 0
+			? direction * timeComparison
+			: left.name.localeCompare(right.name, undefined, { sensitivity: 'base', numeric: true });
+	});
 }
 export type ModelsTreeNode = RootNode | ProviderNode | ModelNode;
 
@@ -50,14 +78,13 @@ export class ModelsTreeProvider implements vscode.TreeDataProvider<ModelsTreeNod
 	}
 
 	async setSortState(sortState: ProviderSortState): Promise<void> {
-		if (this.sortState.by === sortState.by && this.sortState.direction === sortState.direction) {
-			return;
-		}
+		const changed = this.sortState.by !== sortState.by || this.sortState.direction !== sortState.direction;
 		this.sortState = { ...sortState };
-		await this.state.update(PROVIDER_SORT_STATE_KEY, this.sortState);
+		if (changed) {
+			await this.state.update(PROVIDER_SORT_STATE_KEY, this.sortState);
+		}
 		this.refresh();
 	}
-
 	refresh(): void {
 		this.changeEmitter.fire();
 	}
@@ -133,17 +160,7 @@ export class ModelsTreeProvider implements vscode.TreeDataProvider<ModelsTreeNod
 			return [new RootNode('Model Providers')];
 		}
 		if (element.kind === 'root') {
-			const providers = [...this.store.getProviders()];
-			providers.sort((left, right) => {
-				const direction = this.sortState.direction === 'ascending' ? 1 : -1;
-				if (this.sortState.by === 'name') {
-					return direction * left.name.localeCompare(right.name, undefined, { sensitivity: 'base', numeric: true });
-				}
-				const timeComparison = left.createdAt - right.createdAt;
-				return timeComparison !== 0
-					? direction * timeComparison
-					: left.name.localeCompare(right.name, undefined, { sensitivity: 'base', numeric: true });
-			});
+			const providers = sortManagedProviders(this.store.getProviders(), this.sortState);
 			return providers.map(provider => new ProviderNode(provider));
 		}
 		if (element.kind === 'provider') {

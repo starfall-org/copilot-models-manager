@@ -14,6 +14,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 	const store = new ProviderStore(context);
 	const config = new CopilotConfigService(store);
 	const tree = new ModelsTreeProvider(store, context.globalState);
+	await vscode.commands.executeCommand('setContext', 'copilotModelsManager.sortDirection', tree.getSortState().direction);
 
 	const configPath = config.getConfigPath();
 	const configWatcher = vscode.workspace.createFileSystemWatcher(
@@ -41,7 +42,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 		configWatcher.onDidDelete(scheduleReload),
 		vscode.window.registerTreeDataProvider('copilotModelsManager.providers', tree),
 		store.onDidChange(() => tree.refresh()),
-		register('copilotModelsManager.sortProviders', () => chooseProviderSort(tree)),
+		register('copilotModelsManager.sortProvidersAscending', () => chooseProviderSort(tree)),
+		register('copilotModelsManager.sortProvidersDescending', () => chooseProviderSort(tree)),
 		register('copilotModelsManager.addProvider', () => addProvider(store, config, tree)),
 		register('copilotModelsManager.openManageLanguageModels', () => vscode.commands.executeCommand('workbench.action.chat.manage')),
 		register('copilotModelsManager.openConfig', () => vscode.commands.executeCommand('workbench.action.openLanguageModelsJson')),
@@ -67,91 +69,95 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 async function chooseProviderSort(tree: ModelsTreeProvider): Promise<void> {
-	const current = tree.getSortState();
-	const picked = await new Promise<ProviderSortState | undefined>(resolve => {
-		const quickPick = vscode.window.createQuickPick<vscode.QuickPickItem & { by: ProviderSortState['by'] }>();
-		let direction = current.direction;
-		let directionButton: vscode.QuickInputButton;
-		const closeButton: vscode.QuickInputButton = {
-			iconPath: new vscode.ThemeIcon('close'),
-			tooltip: 'Close',
+	type SortItem = vscode.QuickPickItem & { by: ProviderSortState['by'] };
+
+	let current = tree.getSortState();
+	const quickPick = vscode.window.createQuickPick<SortItem>();
+	const closeButton: vscode.QuickInputButton = {
+		iconPath: new vscode.ThemeIcon('close'),
+		tooltip: 'Close',
+	};
+	let directionButton: vscode.QuickInputButton;
+
+	const render = (): void => {
+		directionButton = {
+			iconPath: new vscode.ThemeIcon(current.direction === 'ascending' ? 'arrow-up' : 'arrow-down'),
+			tooltip: current.direction === 'ascending'
+				? 'Ascending — click to switch to descending'
+				: 'Descending — click to switch to ascending',
 		};
-		let settled = false;
-
-		const render = (): void => {
-			const ascending = direction === 'ascending';
-			directionButton = {
-				iconPath: new vscode.ThemeIcon(ascending ? 'arrow-up' : 'arrow-down'),
-				tooltip: ascending ? 'Ascending — click for descending' : 'Descending — click for ascending',
-			};
-			quickPick.buttons = [directionButton, closeButton];
-			quickPick.items = [
-				{
-					label: '$(clock) Time',
-					description: [
-						current.by === 'time' && current.direction === direction ? 'Current' : undefined,
-						ascending ? 'Oldest first' : 'Newest first',
-					].filter(Boolean).join(' · '),
-					by: 'time',
-				},
-				{
-					label: '$(symbol-text) Name',
-					description: [
-						current.by === 'name' && current.direction === direction ? 'Current' : undefined,
-						ascending ? 'A–Z' : 'Z–A',
-					].filter(Boolean).join(' · '),
-					by: 'name',
-				},
-			];
-		};
-
-		const finish = (value: ProviderSortState | undefined): void => {
-			if (settled) {
-				return;
-			}
-			settled = true;
-			resolve(value);
-			quickPick.hide();
-		};
-
-		quickPick.title = 'Sort Model Providers';
-		quickPick.placeholder = 'Choose Time or Name; use the arrow button to change direction';
-		quickPick.ignoreFocusOut = true;
-		render();
-
-		const disposables = [
-			quickPick.onDidTriggerButton(button => {
-				if (button === directionButton) {
-					direction = direction === 'ascending' ? 'descending' : 'ascending';
-					render();
-				} else if (button === closeButton) {
-					finish(undefined);
-				}
-			}),
-			quickPick.onDidAccept(() => {
-				const item = quickPick.selectedItems[0] ?? quickPick.activeItems[0];
-				finish(item ? { by: item.by, direction } : undefined);
-			}),
-			quickPick.onDidHide(() => {
-				if (!settled) {
-					settled = true;
-					resolve(undefined);
-				}
-				for (const disposable of disposables) {
-					disposable.dispose();
-				}
-				quickPick.dispose();
-			}),
+		quickPick.items = [
+			{
+				label: '$(clock) Time',
+				description: current.by === 'time'
+					? `Current · ${current.direction === 'ascending' ? 'Oldest first' : 'Newest first'}`
+					: undefined,
+				buttons: [directionButton],
+				by: 'time',
+			},
+			{
+				label: '$(symbol-text) Name',
+				description: current.by === 'name'
+					? `Current · ${current.direction === 'ascending' ? 'A–Z' : 'Z–A'}`
+					: undefined,
+				buttons: [directionButton],
+				by: 'name',
+			},
+			{
+				label: '$(symbol-numeric) Quantity',
+				description: current.by === 'quantity'
+					? `Current · ${current.direction === 'ascending' ? 'Fewest first' : 'Most first'}`
+					: undefined,
+				buttons: [directionButton],
+				by: 'quantity',
+			},
 		];
+	};
 
-		quickPick.show();
-	});
+	const applySort = async (
+		by: ProviderSortState['by'],
+		direction: ProviderSortState['direction'],
+	): Promise<void> => {
+		await tree.setSortState({ by, direction });
+		await vscode.commands.executeCommand('setContext', 'copilotModelsManager.sortDirection', direction);
+		current = tree.getSortState();
+		render();
+	};
 
-	if (picked) {
-		await tree.setSortState(picked);
-	}
+	quickPick.title = 'Sort Model Providers';
+	quickPick.placeholder = 'Select Time, Name, or Quantity; click the arrow to reverse direction';
+	quickPick.ignoreFocusOut = true;
+	quickPick.buttons = [closeButton];
+	render();
+
+	const disposables = [
+		quickPick.onDidTriggerButton(button => {
+			if (button === closeButton) {
+				quickPick.hide();
+			}
+		}),
+		quickPick.onDidTriggerItemButton(event => {
+			if (event.button === directionButton) {
+				const nextDirection = current.direction === 'ascending' ? 'descending' : 'ascending';
+				void applySort(event.item.by, nextDirection);
+			}
+		}),
+		quickPick.onDidAccept(() => {
+			const item = quickPick.selectedItems[0] ?? quickPick.activeItems[0];
+			if (item) {
+				void applySort(item.by, current.direction);
+			}
+		}),
+		quickPick.onDidHide(() => {
+			for (const disposable of disposables) {
+				disposable.dispose();
+			}
+			quickPick.dispose();
+		}),
+	];
+
+	quickPick.show();
 }
-
 function register(command: string, callback: (...args: any[]) => unknown): vscode.Disposable {
 	return vscode.commands.registerCommand(command, async (...args: any[]) => {
 		try {

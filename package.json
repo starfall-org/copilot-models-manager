@@ -2,7 +2,7 @@
   "name": "copilot-models-manager",
   "displayName": "Copilot Models Manager",
   "description": "Manage Custom Endpoint providers and models used by GitHub Copilot without reimplementing the model runtime.",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "publisher": "starfall-orbit",
   "engines": {
     "vscode": "^1.138.0"
@@ -25,7 +25,8 @@
   "activationEvents": [
     "onView:copilotModelsManager.providers",
     "onCommand:copilotModelsManager.addProvider",
-    "onCommand:copilotModelsManager.sortProviders",
+    "onCommand:copilotModelsManager.sortProvidersAscending",
+    "onCommand:copilotModelsManager.sortProvidersDescending",
     "onCommand:copilotModelsManager.editProvider",
     "onCommand:copilotModelsManager.refreshProvider",
     "onCommand:copilotModelsManager.refreshAll",
@@ -68,9 +69,14 @@
     ],
     "commands": [
       {
-        "command": "copilotModelsManager.sortProviders",
+        "command": "copilotModelsManager.sortProvidersAscending",
         "title": "Sort Providers",
-        "icon": "$(sort-precedence)"
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "copilotModelsManager.sortProvidersDescending",
+        "title": "Sort Providers",
+        "icon": "$(arrow-down)"
       },
       {
         "command": "copilotModelsManager.addProvider",
@@ -149,8 +155,13 @@
     "menus": {
       "view/item/context": [
         {
-          "command": "copilotModelsManager.sortProviders",
-          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.root",
+          "command": "copilotModelsManager.sortProvidersAscending",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.root && copilotModelsManager.sortDirection == ascending",
+          "group": "inline@0"
+        },
+        {
+          "command": "copilotModelsManager.sortProvidersDescending",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.root && copilotModelsManager.sortDirection == descending",
           "group": "inline@0"
         },
         {

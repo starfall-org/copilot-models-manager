@@ -1,10 +1,35 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { hasConflictingProviderGroupName, mergeManagedProviderGroups } from '../copilotConfig';
-import { CopilotProviderGroup } from '../types';
-
+import { sortManagedProviders } from '../modelsTree';
+import { isModelDiscoveryAuthError, ModelDiscoveryHttpError } from '../providerClient';
+import { CopilotProviderGroup, ManagedProvider } from '../types';
+const testModel = (id: string, enabled = true) => ({
+	id, name: id, enabled, toolCalling: true, vision: false,
+});
+const providers: ManagedProvider[] = [
+	{ id: 'b', name: 'Beta', apiType: 'responses', baseUrl: 'https://b.example.com', models: [testModel('b1'), testModel('b2')], createdAt: 200, updatedAt: 200 },
+	{ id: 'a', name: 'Alpha', apiType: 'responses', baseUrl: 'https://a.example.com', models: [testModel('a1')], createdAt: 300, updatedAt: 300 },
+	{ id: 'g', name: 'Gamma', apiType: 'responses', baseUrl: 'https://g.example.com', models: [testModel('g1'), testModel('g2'), testModel('g3'), testModel('hidden', false)], createdAt: 100, updatedAt: 100 },
+];
 suite('Extension Test Suite', () => {
 	vscode.window.showInformationMessage('Start all tests.');
+
+	test('provider sorting supports time, name, and quantity in both directions', () => {
+		assert.deepStrictEqual(sortManagedProviders(providers, { by: 'time', direction: 'ascending' }).map(item => item.id), ['g', 'b', 'a']);
+		assert.deepStrictEqual(sortManagedProviders(providers, { by: 'time', direction: 'descending' }).map(item => item.id), ['a', 'b', 'g']);
+		assert.deepStrictEqual(sortManagedProviders(providers, { by: 'name', direction: 'ascending' }).map(item => item.id), ['a', 'b', 'g']);
+		assert.deepStrictEqual(sortManagedProviders(providers, { by: 'name', direction: 'descending' }).map(item => item.id), ['g', 'b', 'a']);
+		assert.deepStrictEqual(sortManagedProviders(providers, { by: 'quantity', direction: 'ascending' }).map(item => item.id), ['a', 'b', 'g']);
+		assert.deepStrictEqual(sortManagedProviders(providers, { by: 'quantity', direction: 'descending' }).map(item => item.id), ['g', 'b', 'a']);
+	});
+
+	test('model discovery only treats authentication HTTP failures as missing-key candidates', () => {
+		assert.strictEqual(isModelDiscoveryAuthError(new ModelDiscoveryHttpError(401, 'Unauthorized', '')), true);
+		assert.strictEqual(isModelDiscoveryAuthError(new ModelDiscoveryHttpError(403, 'Forbidden', '')), true);
+		assert.strictEqual(isModelDiscoveryAuthError(new ModelDiscoveryHttpError(404, 'Not Found', '')), false);
+		assert.strictEqual(isModelDiscoveryAuthError(new ModelDiscoveryHttpError(500, 'Server Error', '')), false);
+	});
 
 	test('provider name check excludes its own saved group but still rejects other groups', () => {
 		const groups = [
