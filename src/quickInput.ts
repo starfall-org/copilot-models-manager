@@ -31,6 +31,10 @@ export async function showManagedQuickPick<T extends vscode.QuickPickItem>(
 		quickPick.matchOnDescription = options.matchOnDescription ?? false;
 		quickPick.matchOnDetail = options.matchOnDetail ?? false;
 		quickPick.buttons = [QUICK_PICK_ACCEPT_BUTTON, QUICK_PICK_CANCEL_BUTTON];
+		const initiallyPicked = items.find(item => Boolean((item as T & { picked?: boolean }).picked));
+		if (initiallyPicked) {
+			quickPick.activeItems = [initiallyPicked];
+		}
 
 		let settled = false;
 		const finish = (value: T | undefined): void => {

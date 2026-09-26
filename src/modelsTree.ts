@@ -8,14 +8,45 @@ export type ProviderSortBy = 'time' | 'name' | 'quantity';
 export type ProviderSortDirection = 'ascending' | 'descending';
 export interface ProviderSortState {
 	by: ProviderSortBy;
+	directions: Record<ProviderSortBy, ProviderSortDirection>;
+}
+
+interface LegacyProviderSortState {
+	by: ProviderSortBy;
 	direction: ProviderSortDirection;
+}
+
+const DEFAULT_PROVIDER_SORT_DIRECTIONS: Record<ProviderSortBy, ProviderSortDirection> = {
+	time: 'descending',
+	name: 'ascending',
+	quantity: 'descending',
+};
+
+function normalizeProviderSortState(
+	saved: ProviderSortState | LegacyProviderSortState | ProviderSortBy | undefined,
+): ProviderSortState {
+	const directions = { ...DEFAULT_PROVIDER_SORT_DIRECTIONS };
+	if (!saved) {
+		return { by: 'time', directions };
+	}
+	if (typeof saved === 'string') {
+		return { by: saved, directions };
+	}
+	if ('directions' in saved) {
+		return {
+			by: saved.by,
+			directions: { ...directions, ...saved.directions },
+		};
+	}
+	directions[saved.by] = saved.direction;
+	return { by: saved.by, directions };
 }
 
 export function sortManagedProviders(
 	providers: readonly ManagedProvider[],
 	sortState: ProviderSortState,
 ): ManagedProvider[] {
-	const direction = sortState.direction === 'ascending' ? 1 : -1;
+	const direction = sortState.directions[sortState.by] === 'ascending' ? 1 : -1;
 	return [...providers].sort((left, right) => {
 		if (sortState.by === 'name') {
 			return direction * left.name.localeCompare(
@@ -67,19 +98,25 @@ export class ModelsTreeProvider implements vscode.TreeDataProvider<ModelsTreeNod
 		private readonly store: ProviderStore,
 		private readonly state: vscode.Memento,
 	) {
-		const saved = state.get<ProviderSortState | ProviderSortBy>(PROVIDER_SORT_STATE_KEY);
-		this.sortState = typeof saved === 'string'
-			? { by: saved, direction: saved === 'time' ? 'descending' : 'ascending' }
-			: saved ?? { by: 'time', direction: 'descending' };
+		const saved = state.get<ProviderSortState | LegacyProviderSortState | ProviderSortBy>(PROVIDER_SORT_STATE_KEY);
+		this.sortState = normalizeProviderSortState(saved);
 	}
 
 	getSortState(): ProviderSortState {
-		return { ...this.sortState };
+		return {
+			by: this.sortState.by,
+			directions: { ...this.sortState.directions },
+		};
 	}
 
 	async setSortState(sortState: ProviderSortState): Promise<void> {
-		const changed = this.sortState.by !== sortState.by || this.sortState.direction !== sortState.direction;
-		this.sortState = { ...sortState };
+		const sortTypes: ProviderSortBy[] = ['time', 'name', 'quantity'];
+		const changed = this.sortState.by !== sortState.by
+			|| sortTypes.some(by => this.sortState.directions[by] !== sortState.directions[by]);
+		this.sortState = {
+			by: sortState.by,
+			directions: { ...sortState.directions },
+		};
 		if (changed) {
 			await this.state.update(PROVIDER_SORT_STATE_KEY, this.sortState);
 		}

@@ -207,7 +207,7 @@ export async function editProvider(
 		const action = await showManagedQuickPick([
 			{ label: '$(edit) Rename Provider', value: 'rename' },
 			{ label: '$(link) Change Base URL', value: 'url' },
-			{ label: '$(symbol-enum) Change API Type', value: 'type' },
+			{ label: '$(symbol-enum) Change API Type', description: provider.apiType, value: 'type' },
 			{ label: '$(key) Update Discovery API Key', value: 'key' },
 			{ label: '$(list-selection) Models', description: `${provider.models.filter(model => model.enabled !== false).length} selected`, value: 'models' },
 			...(provider.models.some(model => model.enabled !== false)

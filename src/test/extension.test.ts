@@ -1,8 +1,8 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { hasConflictingProviderGroupName, mergeManagedProviderGroups } from '../copilotConfig';
-import { sortManagedProviders } from '../modelsTree';
-import { isModelDiscoveryAuthError, ModelDiscoveryHttpError } from '../providerClient';
+import { ProviderSortBy, ProviderSortDirection, ProviderSortState, sortManagedProviders } from '../modelsTree';
+import { defaultMaxInputTokens, defaultMaxOutputTokens, isModelDiscoveryAuthError, ModelDiscoveryHttpError } from '../providerClient';
 import { CopilotProviderGroup, ManagedProvider } from '../types';
 const testModel = (id: string, enabled = true) => ({
 	id, name: id, enabled, toolCalling: true, vision: false,
@@ -12,18 +12,36 @@ const providers: ManagedProvider[] = [
 	{ id: 'a', name: 'Alpha', apiType: 'responses', baseUrl: 'https://a.example.com', models: [testModel('a1')], createdAt: 300, updatedAt: 300 },
 	{ id: 'g', name: 'Gamma', apiType: 'responses', baseUrl: 'https://g.example.com', models: [testModel('g1'), testModel('g2'), testModel('g3'), testModel('hidden', false)], createdAt: 100, updatedAt: 100 },
 ];
+
+const providerSortState = (
+	by: ProviderSortBy,
+	direction: ProviderSortDirection,
+): ProviderSortState => ({
+	by,
+	directions: {
+		time: 'descending',
+		name: 'ascending',
+		quantity: 'descending',
+		[by]: direction,
+	},
+});
 suite('Extension Test Suite', () => {
 	vscode.window.showInformationMessage('Start all tests.');
 
 	test('provider sorting supports time, name, and quantity in both directions', () => {
-		assert.deepStrictEqual(sortManagedProviders(providers, { by: 'time', direction: 'ascending' }).map(item => item.id), ['g', 'b', 'a']);
-		assert.deepStrictEqual(sortManagedProviders(providers, { by: 'time', direction: 'descending' }).map(item => item.id), ['a', 'b', 'g']);
-		assert.deepStrictEqual(sortManagedProviders(providers, { by: 'name', direction: 'ascending' }).map(item => item.id), ['a', 'b', 'g']);
-		assert.deepStrictEqual(sortManagedProviders(providers, { by: 'name', direction: 'descending' }).map(item => item.id), ['g', 'b', 'a']);
-		assert.deepStrictEqual(sortManagedProviders(providers, { by: 'quantity', direction: 'ascending' }).map(item => item.id), ['a', 'b', 'g']);
-		assert.deepStrictEqual(sortManagedProviders(providers, { by: 'quantity', direction: 'descending' }).map(item => item.id), ['g', 'b', 'a']);
+		assert.deepStrictEqual(sortManagedProviders(providers, providerSortState('time', 'ascending')).map(item => item.id), ['g', 'b', 'a']);
+		assert.deepStrictEqual(sortManagedProviders(providers, providerSortState('time', 'descending')).map(item => item.id), ['a', 'b', 'g']);
+		assert.deepStrictEqual(sortManagedProviders(providers, providerSortState('name', 'ascending')).map(item => item.id), ['a', 'b', 'g']);
+		assert.deepStrictEqual(sortManagedProviders(providers, providerSortState('name', 'descending')).map(item => item.id), ['g', 'b', 'a']);
+		assert.deepStrictEqual(sortManagedProviders(providers, providerSortState('quantity', 'ascending')).map(item => item.id), ['a', 'b', 'g']);
+		assert.deepStrictEqual(sortManagedProviders(providers, providerSortState('quantity', 'descending')).map(item => item.id), ['g', 'b', 'a']);
 	});
 
+
+	test('model token defaults are stable when provider metadata is missing', () => {
+		assert.strictEqual(defaultMaxInputTokens(), 128000);
+		assert.strictEqual(defaultMaxOutputTokens(), 16000);
+	});
 	test('model discovery only treats authentication HTTP failures as missing-key candidates', () => {
 		assert.strictEqual(isModelDiscoveryAuthError(new ModelDiscoveryHttpError(401, 'Unauthorized', '')), true);
 		assert.strictEqual(isModelDiscoveryAuthError(new ModelDiscoveryHttpError(403, 'Forbidden', '')), true);

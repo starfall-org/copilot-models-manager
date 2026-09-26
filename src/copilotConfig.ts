@@ -3,7 +3,7 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { buildModelRequestUrl, defaultContextWindow, defaultMaxOutputTokens } from './providerClient';
+import { buildModelRequestUrl, defaultContextWindow, defaultMaxInputTokens, defaultMaxOutputTokens } from './providerClient';
 import { ProviderStore } from './providerStore';
 import {
 	ApiType,
@@ -192,8 +192,8 @@ export class CopilotConfigService {
 			streaming: entry.streaming,
 			editTools: entry.editTools,
 			contextWindow: entry.contextWindow ?? defaultContextWindow(),
-			maxInputTokens: entry.maxInputTokens,
-			maxOutputTokens: entry.maxOutputTokens ?? defaultMaxOutputTokens(entry.contextWindow ?? defaultContextWindow()),
+			maxInputTokens: entry.maxInputTokens ?? defaultMaxInputTokens(),
+			maxOutputTokens: entry.maxOutputTokens ?? defaultMaxOutputTokens(),
 			zeroDataRetentionEnabled: entry.zeroDataRetentionEnabled,
 			supportsReasoningEffort: entry.supportsReasoningEffort,
 			reasoningEffortFormat: entry.reasoningEffortFormat,
@@ -234,8 +234,8 @@ export class CopilotConfigService {
 					...(model.streaming !== undefined ? { streaming: model.streaming } : {}),
 					...(model.editTools?.length ? { editTools: model.editTools } : {}),
 					contextWindow: model.contextWindow ?? defaultContextWindow(),
-					...(model.maxInputTokens ? { maxInputTokens: model.maxInputTokens } : {}),
-					maxOutputTokens: model.maxOutputTokens ?? defaultMaxOutputTokens(model.contextWindow ?? defaultContextWindow()),
+					maxInputTokens: model.maxInputTokens ?? defaultMaxInputTokens(),
+					maxOutputTokens: model.maxOutputTokens ?? defaultMaxOutputTokens(),
 					...(model.zeroDataRetentionEnabled !== undefined ? { zeroDataRetentionEnabled: model.zeroDataRetentionEnabled } : {}),
 					...(model.supportsReasoningEffort?.length ? { supportsReasoningEffort: model.supportsReasoningEffort } : {}),
 					...(model.reasoningEffortFormat ? { reasoningEffortFormat: model.reasoningEffortFormat } : {}),

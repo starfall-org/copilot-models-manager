@@ -83,19 +83,12 @@ export function defaultContextWindow(): number {
 	return 128 * 1024;
 }
 
-export function defaultMaxOutputTokens(contextWindow?: number): number {
-	const kib = 1024;
-	const effectiveContextWindow = contextWindow ?? defaultContextWindow();
-	if (effectiveContextWindow < 128 * kib) {
-		return 16 * kib;
-	}
-	if (effectiveContextWindow < 256 * kib) {
-		return 32 * kib;
-	}
-	if (effectiveContextWindow < 512 * kib) {
-		return 64 * kib;
-	}
-	return 128 * kib;
+export function defaultMaxInputTokens(): number {
+	return 128000;
+}
+
+export function defaultMaxOutputTokens(): number {
+	return 16000;
 }
 
 function stringArray(value: unknown): string[] {
@@ -159,8 +152,8 @@ function parseDiscoveredModel(value: unknown): DiscoveredModel | undefined {
 		vision,
 		thinking,
 		contextWindow,
-		maxInputTokens: parseNumber(raw.max_input_tokens, raw.maxInputTokens),
-		maxOutputTokens: discoveredMaxOutputTokens ?? defaultMaxOutputTokens(contextWindow),
+		maxInputTokens: parseNumber(raw.max_input_tokens, raw.maxInputTokens) ?? defaultMaxInputTokens(),
+		maxOutputTokens: discoveredMaxOutputTokens ?? defaultMaxOutputTokens(),
 		supportsReasoningEffort: supported.has('reasoning_effort') ? ['low', 'medium', 'high'] : undefined,
 	};
 }

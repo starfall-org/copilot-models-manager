@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { CopilotConfigService } from './copilotConfig';
-import { defaultContextWindow, defaultMaxOutputTokens, normalizeBaseUrl } from './providerClient';
+import { defaultContextWindow, defaultMaxInputTokens, defaultMaxOutputTokens, normalizeBaseUrl } from './providerClient';
 import { ProviderStore } from './providerStore';
 import { ModelsTreeProvider, ProviderNode } from './modelsTree';
 import { ManagedModel } from './types';
@@ -26,7 +26,8 @@ export async function addModel(
 		toolCalling: true,
 		vision: false,
 		contextWindow: defaultContextWindow(),
-		maxOutputTokens: defaultMaxOutputTokens(defaultContextWindow()),
+		maxInputTokens: defaultMaxInputTokens(),
+		maxOutputTokens: defaultMaxOutputTokens(),
 	};
 
 	while (true) {
