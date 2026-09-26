@@ -68,37 +68,87 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
 async function chooseProviderSort(tree: ModelsTreeProvider): Promise<void> {
 	const current = tree.getSortState();
-	const isCurrent = (state: ProviderSortState): boolean =>
-		current.by === state.by && current.direction === state.direction;
-	const options: Array<vscode.QuickPickItem & { state: ProviderSortState }> = [
-		{
-			label: '$(clock) Time — Descending',
-			description: (isCurrent({ by: 'time', direction: 'descending' }) ? 'Current · ' : '') + 'Newest first',
-			state: { by: 'time', direction: 'descending' },
-		},
-		{
-			label: '$(clock) Time — Ascending',
-			description: (isCurrent({ by: 'time', direction: 'ascending' }) ? 'Current · ' : '') + 'Oldest first',
-			state: { by: 'time', direction: 'ascending' },
-		},
-		{
-			label: '$(symbol-text) Name — Ascending',
-			description: (isCurrent({ by: 'name', direction: 'ascending' }) ? 'Current · ' : '') + 'A–Z',
-			state: { by: 'name', direction: 'ascending' },
-		},
-		{
-			label: '$(symbol-text) Name — Descending',
-			description: (isCurrent({ by: 'name', direction: 'descending' }) ? 'Current · ' : '') + 'Z–A',
-			state: { by: 'name', direction: 'descending' },
-		},
-	];
-	const picked = await vscode.window.showQuickPick(options, {
-		title: 'Sort Model Providers',
-		placeHolder: 'Choose field and direction',
-		ignoreFocusOut: true,
+	const picked = await new Promise<ProviderSortState | undefined>(resolve => {
+		const quickPick = vscode.window.createQuickPick<vscode.QuickPickItem & { by: ProviderSortState['by'] }>();
+		let direction = current.direction;
+		let directionButton: vscode.QuickInputButton;
+		const closeButton: vscode.QuickInputButton = {
+			iconPath: new vscode.ThemeIcon('close'),
+			tooltip: 'Close',
+		};
+		let settled = false;
+
+		const render = (): void => {
+			const ascending = direction === 'ascending';
+			directionButton = {
+				iconPath: new vscode.ThemeIcon(ascending ? 'arrow-up' : 'arrow-down'),
+				tooltip: ascending ? 'Ascending — click for descending' : 'Descending — click for ascending',
+			};
+			quickPick.buttons = [directionButton, closeButton];
+			quickPick.items = [
+				{
+					label: '$(clock) Time',
+					description: [
+						current.by === 'time' && current.direction === direction ? 'Current' : undefined,
+						ascending ? 'Oldest first' : 'Newest first',
+					].filter(Boolean).join(' · '),
+					by: 'time',
+				},
+				{
+					label: '$(symbol-text) Name',
+					description: [
+						current.by === 'name' && current.direction === direction ? 'Current' : undefined,
+						ascending ? 'A–Z' : 'Z–A',
+					].filter(Boolean).join(' · '),
+					by: 'name',
+				},
+			];
+		};
+
+		const finish = (value: ProviderSortState | undefined): void => {
+			if (settled) {
+				return;
+			}
+			settled = true;
+			resolve(value);
+			quickPick.hide();
+		};
+
+		quickPick.title = 'Sort Model Providers';
+		quickPick.placeholder = 'Choose Time or Name; use the arrow button to change direction';
+		quickPick.ignoreFocusOut = true;
+		render();
+
+		const disposables = [
+			quickPick.onDidTriggerButton(button => {
+				if (button === directionButton) {
+					direction = direction === 'ascending' ? 'descending' : 'ascending';
+					render();
+				} else if (button === closeButton) {
+					finish(undefined);
+				}
+			}),
+			quickPick.onDidAccept(() => {
+				const item = quickPick.selectedItems[0] ?? quickPick.activeItems[0];
+				finish(item ? { by: item.by, direction } : undefined);
+			}),
+			quickPick.onDidHide(() => {
+				if (!settled) {
+					settled = true;
+					resolve(undefined);
+				}
+				for (const disposable of disposables) {
+					disposable.dispose();
+				}
+				quickPick.dispose();
+			}),
+		];
+
+		quickPick.show();
 	});
+
 	if (picked) {
-		await tree.setSortState(picked.state);
+		await tree.setSortState(picked);
 	}
 }
 
