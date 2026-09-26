@@ -2,6 +2,14 @@ import * as vscode from 'vscode';
 import { ManagedModel, ManagedProvider } from './types';
 import { ProviderStore } from './providerStore';
 
+const PROVIDER_SORT_STATE_KEY = 'providerSortMode';
+
+export type ProviderSortBy = 'time' | 'name';
+export type ProviderSortDirection = 'ascending' | 'descending';
+export interface ProviderSortState {
+	by: ProviderSortBy;
+	direction: ProviderSortDirection;
+}
 export type ModelsTreeNode = RootNode | ProviderNode | ModelNode;
 
 export class RootNode {
@@ -25,8 +33,30 @@ export class ModelNode {
 export class ModelsTreeProvider implements vscode.TreeDataProvider<ModelsTreeNode> {
 	private readonly changeEmitter = new vscode.EventEmitter<ModelsTreeNode | undefined | null | void>();
 	readonly onDidChangeTreeData = this.changeEmitter.event;
+	private sortState: ProviderSortState;
 
-	constructor(private readonly store: ProviderStore) {}
+	constructor(
+		private readonly store: ProviderStore,
+		private readonly state: vscode.Memento,
+	) {
+		const saved = state.get<ProviderSortState | ProviderSortBy>(PROVIDER_SORT_STATE_KEY);
+		this.sortState = typeof saved === 'string'
+			? { by: saved, direction: saved === 'time' ? 'descending' : 'ascending' }
+			: saved ?? { by: 'time', direction: 'descending' };
+	}
+
+	getSortState(): ProviderSortState {
+		return { ...this.sortState };
+	}
+
+	async setSortState(sortState: ProviderSortState): Promise<void> {
+		if (this.sortState.by === sortState.by && this.sortState.direction === sortState.direction) {
+			return;
+		}
+		this.sortState = { ...sortState };
+		await this.state.update(PROVIDER_SORT_STATE_KEY, this.sortState);
+		this.refresh();
+	}
 
 	refresh(): void {
 		this.changeEmitter.fire();
@@ -48,7 +78,9 @@ export class ModelsTreeProvider implements vscode.TreeDataProvider<ModelsTreeNod
 				selected > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
 			);
 			item.id = `provider:${provider.id}`;
-			item.contextValue = 'copilotModelsManager.provider';
+			item.contextValue = selected > 0
+				? 'copilotModelsManager.provider.withModels'
+				: 'copilotModelsManager.provider.withoutModels';
 			item.description = `${provider.apiType} · ${selected} models`;
 			item.tooltip = new vscode.MarkdownString(
 				[
@@ -101,7 +133,18 @@ export class ModelsTreeProvider implements vscode.TreeDataProvider<ModelsTreeNod
 			return [new RootNode('Model Providers')];
 		}
 		if (element.kind === 'root') {
-			return this.store.getProviders().map(provider => new ProviderNode(provider));
+			const providers = [...this.store.getProviders()];
+			providers.sort((left, right) => {
+				const direction = this.sortState.direction === 'ascending' ? 1 : -1;
+				if (this.sortState.by === 'name') {
+					return direction * left.name.localeCompare(right.name, undefined, { sensitivity: 'base', numeric: true });
+				}
+				const timeComparison = left.createdAt - right.createdAt;
+				return timeComparison !== 0
+					? direction * timeComparison
+					: left.name.localeCompare(right.name, undefined, { sensitivity: 'base', numeric: true });
+			});
+			return providers.map(provider => new ProviderNode(provider));
 		}
 		if (element.kind === 'provider') {
 			return element.provider.models
@@ -110,4 +153,5 @@ export class ModelsTreeProvider implements vscode.TreeDataProvider<ModelsTreeNod
 		}
 		return [];
 	}
+
 }

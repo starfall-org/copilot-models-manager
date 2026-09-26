@@ -25,6 +25,7 @@
   "activationEvents": [
     "onView:copilotModelsManager.providers",
     "onCommand:copilotModelsManager.addProvider",
+    "onCommand:copilotModelsManager.sortProviders",
     "onCommand:copilotModelsManager.editProvider",
     "onCommand:copilotModelsManager.refreshProvider",
     "onCommand:copilotModelsManager.refreshAll",
@@ -66,6 +67,11 @@
       }
     ],
     "commands": [
+      {
+        "command": "copilotModelsManager.sortProviders",
+        "title": "Sort Providers",
+        "icon": "$(sort-precedence)"
+      },
       {
         "command": "copilotModelsManager.addProvider",
         "title": "Add Provider",
@@ -143,6 +149,11 @@
     "menus": {
       "view/item/context": [
         {
+          "command": "copilotModelsManager.sortProviders",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.root",
+          "group": "inline@0"
+        },
+        {
           "command": "copilotModelsManager.addProvider",
           "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.root",
           "group": "inline@1"
@@ -159,37 +170,37 @@
         },
         {
           "command": "copilotModelsManager.refreshProvider",
-          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
+          "when": "view == copilotModelsManager.providers && viewItem =~ /^copilotModelsManager\\.provider\\./",
           "group": "inline@1"
         },
         {
           "command": "copilotModelsManager.refreshProvider",
-          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
+          "when": "view == copilotModelsManager.providers && viewItem =~ /^copilotModelsManager\\.provider\\./",
           "group": "provider@1"
         },
         {
           "command": "copilotModelsManager.copyApiKey",
-          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
+          "when": "view == copilotModelsManager.providers && viewItem =~ /^copilotModelsManager\\.provider\\./",
           "group": "manage@0"
         },
         {
           "command": "copilotModelsManager.manageCopilotApiKey",
-          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
+          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider.withModels",
           "group": "models@0"
         },
         {
           "command": "copilotModelsManager.addModel",
-          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
+          "when": "view == copilotModelsManager.providers && viewItem =~ /^copilotModelsManager\\.provider\\./",
           "group": "models@1"
         },
         {
           "command": "copilotModelsManager.editProvider",
-          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
+          "when": "view == copilotModelsManager.providers && viewItem =~ /^copilotModelsManager\\.provider\\./",
           "group": "manage@1"
         },
         {
           "command": "copilotModelsManager.deleteProvider",
-          "when": "view == copilotModelsManager.providers && viewItem == copilotModelsManager.provider",
+          "when": "view == copilotModelsManager.providers && viewItem =~ /^copilotModelsManager\\.provider\\./",
           "group": "manage@9"
         },
         {

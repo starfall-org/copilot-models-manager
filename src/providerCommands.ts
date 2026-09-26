@@ -61,7 +61,9 @@ export async function addProvider(
 			{ label: '$(symbol-enum) apiType', description: draft.apiType, value: 'type' },
 			{ label: '$(key) discoveryApiKey', description: discoveryApiKey ? 'Set' : 'Unset', value: 'key' },
 			{ label: '$(list-selection) Models', description: `${draft.models.filter(model => model.enabled !== false).length} selected`, value: 'models' },
-			{ label: '$(settings-gear) Open Copilot Manage…', description: draft.name ? `Filter: ${draft.name}` : 'Set provider name first', value: 'copilotManage' },
+			...(draft.models.some(model => model.enabled !== false)
+				? [{ label: '$(settings-gear) Open Copilot Manage…', description: `Filter: ${draft.name}`, value: 'copilotManage' }]
+				: []),
 			{ label: '$(list-unordered) modelsPath', description: draft.modelsPath || 'Automatic /v1/models', value: 'modelsPath' },
 			{ label: '$(json) requestHeaders', description: draft.requestHeaders ? JSON.stringify(draft.requestHeaders) : 'Unset', value: 'headers' },
 		], {
@@ -149,12 +151,13 @@ export async function addProvider(
 				break;
 			}
 			case 'copilotManage': {
-				if (!draft.name.trim()) {
-					void vscode.window.showWarningMessage('Set the provider name before opening Copilot Manage Language Models.');
+				if (!draft.models.some(model => model.enabled !== false)) {
+					void vscode.window.showWarningMessage('Add or select at least one model before opening Copilot Manage Language Models.');
 					continue;
 				}
+				await autoSave();
 				await vscode.commands.executeCommand('workbench.action.chat.manage', draft.name);
-				continue;
+				return;
 			}
 			case 'modelsPath': {
 				const value = await vscode.window.showInputBox({
@@ -204,7 +207,9 @@ export async function editProvider(
 			{ label: '$(symbol-enum) Change API Type', value: 'type' },
 			{ label: '$(key) Update Discovery API Key', value: 'key' },
 			{ label: '$(list-selection) Models', description: `${provider.models.filter(model => model.enabled !== false).length} selected`, value: 'models' },
-			{ label: '$(settings-gear) Manage Language Models', value: 'copilotKey' },
+			...(provider.models.some(model => model.enabled !== false)
+				? [{ label: '$(settings-gear) Manage Language Models', value: 'copilotKey' }]
+				: []),
 			{ label: '$(list-unordered) Set Model List Endpoint', value: 'modelsPath' },
 			{ label: '$(json) Set Shared Request Headers', value: 'headers' },
 		], {
@@ -288,9 +293,12 @@ export async function editProvider(
 				break;
 			}
 			case 'copilotKey': {
+				if (!provider.models.some(model => model.enabled !== false)) {
+					void vscode.window.showWarningMessage('Add or select at least one model before opening Manage Language Models.');
+					continue;
+				}
 				await vscode.commands.executeCommand('workbench.action.chat.manage', provider.name);
-				changed = false;
-				continue;
+				return;
 			}
 			case 'modelsPath': {
 				const value = await vscode.window.showInputBox({
@@ -348,6 +356,10 @@ export async function manageCopilotApiKey(
 ): Promise<void> {
 	const provider = await resolveProvider(store, node);
 	if (!provider) {
+		return;
+	}
+	if (!provider.models.some(model => model.enabled !== false)) {
+		void vscode.window.showWarningMessage('Add or select at least one model before opening Manage Language Models.');
 		return;
 	}
 	await vscode.commands.executeCommand('workbench.action.chat.manage', provider.name);
