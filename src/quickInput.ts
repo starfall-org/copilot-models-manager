@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ApiType, EditToolName } from './types';
+import { availableReasoningEfforts } from './reasoningEffort';
 
 const API_TYPES: Array<{ label: string; description: string; value: ApiType }> = [
 	{ label: 'Chat Completions', description: 'OpenAI-compatible /v1/chat/completions', value: 'chat-completions' },
@@ -191,6 +192,33 @@ export async function pickOptionalApiType(
 	return picked
 		? { cancelled: false, value: picked.value }
 		: { cancelled: true, value: current };
+}
+
+export async function pickReasoningEfforts(apiType: ApiType, current?: string[]): Promise<string[] | null> {
+	const allowed = availableReasoningEfforts(apiType);
+	const options: Array<{ label: string; description?: string; value: string; picked: boolean }> = [
+		...allowed.map(value => ({
+			label: value,
+			description: apiType === 'messages' ? 'Anthropic Messages effort' : 'OpenAI reasoning effort',
+			value,
+			picked: current?.includes(value) ?? false,
+		})),
+		...(current ?? [])
+			.filter(value => !allowed.includes(value))
+			.map(value => ({
+				label: value,
+				description: 'Existing custom level',
+				value,
+				picked: true,
+			})),
+	];
+
+	const picked = await showManagedMultiQuickPick(options, {
+		title: 'Reasoning Effort Levels',
+		placeHolder: 'Select the effort levels this model supports. Select none to hide the Thinking Effort picker.',
+		ignoreFocusOut: true,
+	});
+	return picked ? picked.map(item => item.value) : null;
 }
 
 export async function pickEditTools(current?: EditToolName[]): Promise<EditToolName[] | null> {

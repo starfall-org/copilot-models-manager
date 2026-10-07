@@ -5,7 +5,8 @@ import { ProviderStore } from './providerStore';
 import { ModelsTreeProvider, ProviderNode } from './modelsTree';
 import { ManagedModel } from './types';
 import { ModelTarget, persistAndRefresh, resolveProvider, resolveModel } from './commandShared';
-import { showManagedQuickPick, pickRequiredBoolean, pickOptionalBoolean, pickOptionalApiType, pickEditTools, optionalBooleanLabel, optionalNumberLabel, editRequestHeaders, editJsonObject, validateHttpUrl, validateObjectJson, askOptionalPositiveInteger } from './quickInput';
+import { showManagedQuickPick, pickRequiredBoolean, pickOptionalBoolean, pickOptionalApiType, pickEditTools, pickReasoningEfforts, optionalBooleanLabel, optionalNumberLabel, editRequestHeaders, editJsonObject, validateHttpUrl, validateObjectJson, askOptionalPositiveInteger } from './quickInput';
+import { setModelApiType, setThinkingState } from './reasoningEffort';
 
 export async function addModel(
 	store: ProviderStore,
@@ -121,7 +122,7 @@ export async function addModel(
 				if (value.cancelled) {
 					continue;
 				}
-				draft = { ...draft, apiType: value.value };
+				draft = setModelApiType(draft, provider.apiType, value.value);
 				break;
 			}
 			case 'toolCalling': {
@@ -140,7 +141,14 @@ export async function addModel(
 				draft = { ...draft, vision: value };
 				break;
 			}
-			case 'thinking':
+			case 'thinking': {
+				const value = await pickOptionalBoolean('thinking', draft.thinking);
+				if (value.cancelled) {
+					continue;
+				}
+				draft = setThinkingState(draft, provider.apiType, value.value);
+				break;
+			}
 			case 'adaptiveThinking':
 			case 'streaming':
 			case 'zeroDataRetentionEnabled': {
@@ -171,18 +179,11 @@ export async function addModel(
 				break;
 			}
 			case 'supportsReasoningEffort': {
-				const value = await vscode.window.showInputBox({
-					title: 'Supported Reasoning Effort Levels',
-					prompt: 'Comma-separated values. Empty removes the property.',
-					value: draft.supportsReasoningEffort?.join(', ') ?? '',
-					placeHolder: 'minimal, low, medium, high',
-					ignoreFocusOut: true,
-				});
-				if (value === undefined) {
+				const value = await pickReasoningEfforts(draft.apiType ?? provider.apiType, draft.supportsReasoningEffort);
+				if (value === null) {
 					continue;
 				}
-				const levels = [...new Set(value.split(',').map(item => item.trim()).filter(Boolean))];
-				draft = { ...draft, supportsReasoningEffort: levels.length ? levels : undefined };
+				draft = { ...draft, supportsReasoningEffort: value.length ? value : undefined };
 				break;
 			}
 			case 'reasoningEffortFormat': {
@@ -343,7 +344,7 @@ export async function editModel(
 				if (value.cancelled) {
 					continue;
 				}
-				next.apiType = value.value;
+				next = setModelApiType(next, provider.apiType, value.value);
 				break;
 			}
 			case 'toolCalling': {
@@ -362,7 +363,14 @@ export async function editModel(
 				next.vision = value;
 				break;
 			}
-			case 'thinking':
+			case 'thinking': {
+				const value = await pickOptionalBoolean('thinking', next.thinking);
+				if (value.cancelled) {
+					continue;
+				}
+				next = setThinkingState(next, provider.apiType, value.value);
+				break;
+			}
 			case 'adaptiveThinking':
 			case 'streaming':
 			case 'zeroDataRetentionEnabled': {
@@ -393,18 +401,11 @@ export async function editModel(
 				break;
 			}
 			case 'supportsReasoningEffort': {
-				const value = await vscode.window.showInputBox({
-					title: 'Supported Reasoning Effort Levels',
-					prompt: 'Comma-separated values. Empty removes the property.',
-					value: model.supportsReasoningEffort?.join(', ') ?? '',
-					placeHolder: 'minimal, low, medium, high',
-					ignoreFocusOut: true,
-				});
-				if (value === undefined) {
+				const value = await pickReasoningEfforts(next.apiType ?? provider.apiType, next.supportsReasoningEffort);
+				if (value === null) {
 					continue;
 				}
-				const levels = [...new Set(value.split(',').map(item => item.trim()).filter(Boolean))];
-				next.supportsReasoningEffort = levels.length ? levels : undefined;
+				next.supportsReasoningEffort = value.length ? value : undefined;
 				break;
 			}
 			case 'reasoningEffortFormat': {
@@ -470,10 +471,8 @@ export async function setModelThinking(
 		return;
 	}
 	const { provider, model } = resolved;
-	const next: ManagedModel = { ...model };
-	if (enabled) {
-		next.thinking = true;
-	} else {
+	const next = setThinkingState(model, provider.apiType, enabled ? true : undefined);
+	if (!enabled) {
 		delete next.thinking;
 	}
 

@@ -8,6 +8,7 @@ import { ManagedProvider } from './types';
 import { persistAndRefresh, resolveProvider } from './commandShared';
 import { withDiscovery, pickFetchedModels, mergeDiscoveredModels } from './modelDiscovery';
 import { showManagedQuickPick, pickApiType, editRequestHeaders, validateHttpUrl } from './quickInput';
+import { syncThinkingForApiTypeChange } from './reasoningEffort';
 
 export async function addProvider(
 	store: ProviderStore,
@@ -266,7 +267,11 @@ export async function editProvider(
 				if (!value) {
 					continue;
 				}
+				const previousApiType = provider.apiType;
 				next.apiType = value;
+				next.models = provider.models.map(model => model.apiType === undefined
+					? syncThinkingForApiTypeChange(model, previousApiType, value)
+					: model);
 				break;
 			}
 			case 'key': {

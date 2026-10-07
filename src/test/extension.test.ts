@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { hasConflictingProviderGroupName, mergeManagedProviderGroups } from '../copilotConfig';
 import { ProviderSortBy, ProviderSortDirection, ProviderSortState, sortManagedProviders } from '../modelsTree';
 import { defaultMaxInputTokens, defaultMaxOutputTokens, isModelDiscoveryAuthError, ModelDiscoveryHttpError } from '../providerClient';
+import { availableReasoningEfforts, setModelApiType, setThinkingState } from '../reasoningEffort';
 import { CopilotProviderGroup, ManagedProvider } from '../types';
 const testModel = (id: string, enabled = true) => ({
 	id, name: id, enabled, toolCalling: true, vision: false,
@@ -42,6 +43,49 @@ suite('Extension Test Suite', () => {
 		assert.strictEqual(defaultMaxInputTokens(), 128000);
 		assert.strictEqual(defaultMaxOutputTokens(), 16000);
 	});
+	test('enabling thinking adds safe effort defaults and the effective API format', () => {
+		const base = testModel('reasoning');
+		const chat = setThinkingState(base, 'chat-completions', true);
+		assert.deepStrictEqual(chat.supportsReasoningEffort, ['low', 'medium', 'high']);
+		assert.strictEqual(chat.reasoningEffortFormat, 'chat-completions');
+
+		const messages = setThinkingState(base, 'messages', true);
+		assert.deepStrictEqual(messages.supportsReasoningEffort, ['low', 'medium', 'high']);
+		assert.strictEqual(messages.reasoningEffortFormat, 'messages');
+	});
+
+	test('reasoning effort choices follow the API type and API changes keep thinking compatible', () => {
+		assert.deepStrictEqual(
+			availableReasoningEfforts('responses'),
+			['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'],
+		);
+		assert.deepStrictEqual(
+			availableReasoningEfforts('messages'),
+			['low', 'medium', 'high', 'xhigh', 'max'],
+		);
+
+		const changed = setModelApiType({
+			...testModel('reasoning'),
+			thinking: true,
+			supportsReasoningEffort: ['none', 'low', 'xhigh'],
+			reasoningEffortFormat: 'responses',
+			apiType: 'responses',
+		}, 'chat-completions', 'messages');
+		assert.deepStrictEqual(changed.supportsReasoningEffort, ['low', 'xhigh']);
+		assert.strictEqual(changed.reasoningEffortFormat, 'messages');
+	});
+
+	test('disabling thinking removes effort picker configuration', () => {
+		const disabled = setThinkingState({
+			...testModel('reasoning'),
+			thinking: true,
+			supportsReasoningEffort: ['low', 'medium', 'high'],
+			reasoningEffortFormat: 'responses',
+		}, 'responses', undefined);
+		assert.strictEqual(disabled.supportsReasoningEffort, undefined);
+		assert.strictEqual(disabled.reasoningEffortFormat, undefined);
+	});
+
 	test('model discovery only treats authentication HTTP failures as missing-key candidates', () => {
 		assert.strictEqual(isModelDiscoveryAuthError(new ModelDiscoveryHttpError(401, 'Unauthorized', '')), true);
 		assert.strictEqual(isModelDiscoveryAuthError(new ModelDiscoveryHttpError(403, 'Forbidden', '')), true);
